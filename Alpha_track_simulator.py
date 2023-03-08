@@ -106,7 +106,11 @@ class Alphas_tracks:
     def fill(self):
         
         """This method must only be called when we want to fill the final alpha track with
-        electrons. If the spread is zero then we don't apply the transversal diffusion
+        electrons. 
+        
+        First it picks a random number following a given ionization profile to situate the electron
+        along the track. Then it picks a number to situate along transverse gaussian distribution
+        that mimics diffusion. If the spread is zero then we don't apply the transversal diffusion.
         """
         
         #Draw a number from the ionization profile distribution
@@ -172,7 +176,41 @@ class Diffusion_handler(Gas):
         for track in alpha_list:
             track.spread=0.01
     
+class Noise():
+
+    """This class handles the noise addition to the final 2D histogram where we assume we have
+    our array of pixels
     
+    We care about the spread of the noise, not so much about the absolute value, so this noise
+    magnitudes will probably be about spread
+    
+    """
+    
+    def __init__(self,dark_current):
+        
+        #Dark_current (electrons/s)
+        self.dark_current=dark_current
+        
+
+    def add_noise(self,exposition_time,Hist2d):
+
+        """This method adds noise to each pixel of a 2D histogram as a function of the
+        electronic noise and the exposure time"""        
+
+        #Electronic noise (e) = dark_current (e/s) * exposition_time (s)
+        #These units are in electrons
+        electronic_noise=self.dark_current*exposition_time
+        
+        #Create an array of n_bins*n_bins and populate them with random numbers
+        random_gauss=np.random.normal(scale=electronic_noise,size=Hist2d.shape)
+        
+        #Ignore the negative ones?
+        random_gauss=abs(random_gauss)
+        
+        #Update the 2d histogram with this values and return it
+        
+        return Hist2d+random_gauss
+
     
 #==This is the main program==
 #Create an argon object from the gas class
@@ -180,8 +218,11 @@ argon=Gas(1,1,1,1,1)
 #Create a source and a list to store
 source=Source()
 track_list=[]
-#Creat some alpha tracks
-n_tracks=10000;ath_angle=0
+#Creat some alpha tracks and set some parameters
+n_tracks=10;ath_angle=0
+
+exposition_time=n_tracks/source.rate #In seconds
+
 source.produce_alpha(n=n_tracks,ath_in=None,store=track_list)
 
 #Create a difussion handler and change the diffusion of the tracks
@@ -190,6 +231,9 @@ diff_handler.diffuse(track_list)
 
 #Generate the electrons alongside the tracks
 for i in track_list: i.fill()
+
+#Create a noise object with a given dark noise
+noise=Noise(50)
 
 
 #===Plot section===
@@ -224,16 +268,18 @@ if n_tracks<100:
     ax2.set_xlabel("x (cm) ")
     ax2.set_ylabel("y (cm) ")
 
-#Get a list of electron positions
+
+
+#Get a list of all electron positions in all tracks
 x_pos=np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,0] for i in range(len(track_list))]))
 y_pos=np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,1] for i in range(len(track_list))]))
 
 #Get the 2d hist
 H, yedges, xedges = np.histogram2d(y_pos, x_pos, bins=30)
 #Create a figure
-fig, ax1 = plt.subplots(ncols=1)
+fig, (ax1,ax2) = plt.subplots(ncols=2)
 #Plot it
-ax1.pcolormesh(xedges, yedges, H, cmap='rainbow')
+ax1.pcolormesh(xedges, yedges, H, cmap='rainbow',vmin = np.min(H), vmax = np.max(H))
 
 #ax1.plot(x, 2*np.log(x), 'k-')
 
@@ -243,7 +289,26 @@ ax1.set_xlabel('x')
 ax1.set_ylabel('y')
 ax1.set_title('Nº of tracks '+ str(n_tracks)+" , equivalent to "+str(n_tracks/500)+" s exposure time")
 
-#Try to get the nº of electrons in a cut
+#Add the noise
+H2=noise.add_noise(exposition_time=exposition_time, Hist2d=H)
+
+#Plot it
+mesh2=plt.pcolormesh(xedges, yedges, H2, cmap='rainbow',vmin = np.min(H), vmax = np.max(H))
+ax2.pcolormesh(xedges, yedges, H2, cmap='rainbow',vmin = np.min(H), vmax = np.max(H))
+
+fig.colorbar(mesh2, ax=[ax1, ax2])
+
+#ax1.plot(x, 2*np.log(x), 'k-')
+
+ax2.set_xlim(x_pos.min(), x_pos.max())
+ax2.set_ylim(y_pos.min(), y_pos.max())
+ax2.set_xlabel('x')
+ax2.set_ylabel('y')
+ax2.set_title('Nº of tracks '+ str(n_tracks)+" , equivalent to "+str(n_tracks/500)+" s exposure time with noise")
+
+
+
+#Get the x position of the electrons whose y position fulfills min_var<y<max_var for each track
 electron_cut=[];variable_cut="x";other_variable="y"
 for track in track_list:
     #Get the cut
@@ -258,6 +323,7 @@ ax1.set_ylabel("N")
 
 #Compare with some of Jacobo's data
 data_df=pd.read_csv("sec x data.csv")
+
 # Hay 58 px entre agujeros y 5 mm entre agujeros
 cal = 58/5 *10 #11.6 px/mm
 
