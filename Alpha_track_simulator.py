@@ -238,7 +238,8 @@ if n_tracks<100:
     #Plot the tracks
     for i in range(len(track_list)):
         
-        ax.plot([track_list[i].x],[track_list[i].y])
+        ax.plot([track_list[i].x0,track_list[i].x],[track_list[i].y0,track_list[i].y])
+
         
     ax.set_xlabel("x (cm) ")
     ax.set_ylabel("y (cm) ")
