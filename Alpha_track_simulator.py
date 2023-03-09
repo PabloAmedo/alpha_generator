@@ -292,7 +292,8 @@ ax1.set_xlabel("x (cm)")
 ax1.set_ylabel("N")
 
 #Compare with some of Jacobo's data
-data_df=pd.read_csv("C:/Users/jacob/OneDrive - Universidade de Santiago de Compostela/Documentos (Escritorio)/Física/Laboratorio/Imágenes Teledyne/Fat gem 8 to 0 medidas/corte x/sec x data.csv")
+data_df=pd.read_csv("sec x data.csv")
+
 # Hay 58 px entre agujeros y 5 mm entre agujeros
 cal = 58/5 *10 #11.6 px/mm
 
