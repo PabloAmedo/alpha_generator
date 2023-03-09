@@ -29,7 +29,7 @@ class Source:
         
         self.radius=radius # In cm
         
-    def produce_alpha(self,n,store,phi_in=None,ath_in=None,x0_in=None,y0_in=None): #Jacobo
+    def produce_alpha(self,n,store,phi_in=None,ath_in=None,theta=None): #Jacobo
         """This method produces an alpha track from the alpha_tracks class"""
         
         for i in range(n):
@@ -44,19 +44,11 @@ class Source:
                 ath=ath_in
                 
     # ______Jacobo_____________________________________________________________
-           
-            if x0_in==None:
-                x0=np.random.rand()*2*self.radius - self.radius
-            else:
-                x0=x0_in
-                
-            if y0_in==None:
-                y0=np.random.rand()*2*self.radius - self.radius
-            else:
-                y0=y0_in
-                
-            #En principio para cada n haría una posición inicial diferente al 
-            #igual que hace con los ángulos.
+            
+            theta=np.random.rand()*2*np.pi
+
+            x0=np.cos(theta)*self.radius*np.random.rand()
+            y0=np.sin(theta)*self.radius*np.random.rand()
                  
             alpha=Alphas_tracks(phi=phi,ath=ath,x0=x0,y0=y0)
             store.append(alpha)
@@ -216,7 +208,7 @@ source=Source(radius=0.1)
 track_list=[]
 #Creat some alpha tracks
 n_tracks=10;ath_angle=0
-source.produce_alpha(n=n_tracks,ath_in=None,x0_in=None,y0_in=None,store=track_list)
+source.produce_alpha(n=n_tracks,ath_in=None,store=track_list)
 #______________________________________________________________________________
 
 #Create a difussion handler and change the diffusion of the tracks
@@ -238,9 +230,8 @@ if n_tracks<100:
     #Plot the tracks
     for i in range(len(track_list)):
         
-        ax.plot([track_list[i].x0,track_list[i].x],[track_list[i].y0,track_list[i].y])
+        ax.plot([track_list[i].x0,track_list[i].x],[track_list[i].y0,track_list[i].y])        
 
-        
     ax.set_xlabel("x (cm) ")
     ax.set_ylabel("y (cm) ")
 
@@ -293,8 +284,7 @@ ax1.set_xlabel("x (cm)")
 ax1.set_ylabel("N")
 
 #Compare with some of Jacobo's data
-data_df=pd.read_csv("sec x data.csv")
-
+data_df=pd.read_csv("C:/Users/jacob/OneDrive - Universidade de Santiago de Compostela/Documentos (Escritorio)/Física/Laboratorio/Imágenes Teledyne/Fat gem 8 to 0 medidas/corte x/sec x data.csv")
 # Hay 58 px entre agujeros y 5 mm entre agujeros
 cal = 58/5 *10 #11.6 px/mm
 
