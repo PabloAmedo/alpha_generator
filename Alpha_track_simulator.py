@@ -21,15 +21,15 @@ class Source:
     
     """This is the source class. It includes all the relevant information about the source"""
     
-    def __init__(self,rate=500,energy=5.5):
+    def __init__(self,rate=500,energy=5.5,radius=1): #Jacobo
         
         self.rate=rate #In Hz
         
         self.energy=5.5 #In Mv
         
-        self.radius=1 # In cm
+        self.radius=radius # In cm
         
-    def produce_alpha(self,n,store,phi_in=None,ath_in=None):
+    def produce_alpha(self,n,store,phi_in=None,ath_in=None,theta=None): #Jacobo
         """This method produces an alpha track from the alpha_tracks class"""
         
         for i in range(n):
@@ -42,8 +42,17 @@ class Source:
                 ath=np.random.rand()*np.pi/2
             else:
                 ath=ath_in
-            alpha=Alphas_tracks(phi=phi,ath=ath)
+                
+    # ______Jacobo_____________________________________________________________
+            
+            theta=np.random.rand()*2*np.pi
+
+            x0=np.cos(theta)*self.radius*np.random.rand()
+            y0=np.sin(theta)*self.radius*np.random.rand()
+                 
+            alpha=Alphas_tracks(phi=phi,ath=ath,x0=x0,y0=y0)
             store.append(alpha)
+    # _________________________________________________________________________            
             
         return store
         
@@ -57,7 +66,7 @@ class Gas:
         self.Dl=Dl
         self.Wi=Wi
         self.density=density
-        
+            
 class Alphas_tracks:
     
     """This is the alpha class. It contains all the relevant information about the alpha track,
@@ -66,7 +75,7 @@ class Alphas_tracks:
     
     """
     
-    def __init__(self,range_alpha=1,phi=None,ath=None,spread=0,ionization_profile="Flat"):
+    def __init__(self,range_alpha=1,phi=None,ath=None,x0=None,y0=None,spread=0,ionization_profile="Flat"): #Jacobo
                 
         #This is the range of the alpha. Get it from NIST
         self.range_max=range_alpha #In cm
@@ -76,12 +85,20 @@ class Alphas_tracks:
         
         #Define an effective range
         self.range=self.range_max*np.cos(ath)
-        
+                
+        # ______Jacobo_________________________________________________________
+      
+        self.x0=x0
+        self.y0=y0
+      
         #X position in the plane
-        self.x=np.cos(phi)*self.range*np.cos(ath)
+        self.x= np.cos(phi)*self.range*np.cos(ath) + self.x0 
+        # + fuente.radius*np.random.rand() 
         
         #Y position in the plane
-        self.y=np.sin(phi)*self.range*np.cos(ath)
+        self.y=np.sin(phi)*self.range*np.cos(ath)  + self.y0
+        # + fuente.radius*np.random.rand()  
+        # _____________________________________________________________________
         
         #Phi angle
         self.phi=phi
@@ -98,7 +115,7 @@ class Alphas_tracks:
         self.n_electrons=50
         
         #Storage of electrons (x,y) positions
-        self.electron_positions=np.zeros([self.n_electrons,2])
+        self.electron_positions=np.zeros([self.n_electrons,2]) # coordenadas [x,y] para los 50 electrones
         
         #Storage of electrons (x,y) positions after diffusion
         self.electron_positions_diff=np.zeros([self.n_electrons,2])
@@ -115,12 +132,19 @@ class Alphas_tracks:
             #Get the radial position of the electron alongside the track
             r_pos=self.ionization_profile()*self.range
             #Change the positions
-            self.electron_positions[i,0]=np.cos(self.phi)*r_pos
-            self.electron_positions[i,1]=np.sin(self.phi)*r_pos
-            #Change the positions
-            self.electron_positions_diff[i,0]=np.cos(self.phi)*r_pos
-            self.electron_positions_diff[i,1]=np.sin(self.phi)*r_pos
             
+            # ______Jacobo_____________________________________________________
+            
+            # En principio debería también de cambiar las posiciones de estos 
+            # electrones
+            
+            self.electron_positions[i,0]=np.cos(self.phi)*r_pos + self.x0
+            self.electron_positions[i,1]=np.sin(self.phi)*r_pos + self.y0
+            #Change the positions
+            self.electron_positions_diff[i,0]=np.cos(self.phi)*r_pos + self.x0
+            self.electron_positions_diff[i,1]=np.sin(self.phi)*r_pos + self.y0
+            # _________________________________________________________________
+
             if self.spread!=0:
                 #Now we need to draw the number from the gaussian distribution
                 r_pos_new=np.random.normal(loc=0,scale=self.spread)
@@ -178,11 +202,14 @@ class Diffusion_handler(Gas):
 #Create an argon object from the gas class
 argon=Gas(1,1,1,1,1)
 #Create a source and a list to store
-source=Source()
+
+# ______Jacobo_________________________________________________________________
+source=Source(radius=0.1)
 track_list=[]
 #Creat some alpha tracks
-n_tracks=10000;ath_angle=0
+n_tracks=10;ath_angle=0
 source.produce_alpha(n=n_tracks,ath_in=None,store=track_list)
+#______________________________________________________________________________
 
 #Create a difussion handler and change the diffusion of the tracks
 diff_handler=Diffusion_handler()
@@ -203,16 +230,16 @@ if n_tracks<100:
     #Plot the tracks
     for i in range(len(track_list)):
         
-        ax.plot([0,track_list[i].x],[0,track_list[i].y])
-        
+        ax.plot([track_list[i].x0,track_list[i].x],[track_list[i].y0,track_list[i].y])        
+
     ax.set_xlabel("x (cm) ")
     ax.set_ylabel("y (cm) ")
-    
+
     #Plot the tracks
     for i in range(len(track_list)):
         
         ax2.scatter(track_list[i].electron_positions[:,0],track_list[i].electron_positions[:,1],marker="o")
-    
+
     #Restart the color cyle of the axis
     ax2.set_prop_cycle(None)
     
@@ -257,7 +284,8 @@ ax1.set_xlabel("x (cm)")
 ax1.set_ylabel("N")
 
 #Compare with some of Jacobo's data
-data_df=pd.read_csv("sec x data.csv")
+path="C:/Users/jacob/OneDrive - Universidade de Santiago de Compostela/Documentos (Escritorio)/Física/Laboratorio/Imágenes Teledyne/Fat gem 8 to 0 medidas/corte x/" 
+data_df=pd.read_csv(path+"sec x data.csv")
 # Hay 58 px entre agujeros y 5 mm entre agujeros
 cal = 58/5 *10 #11.6 px/mm
 
@@ -265,5 +293,3 @@ cal = 58/5 *10 #11.6 px/mm
 ax1.scatter(data_df["px"]*2/2500-1.12,data_df["19"]*max(le_hist[0])/max(data_df["19"]),c="k",label="Data")
 ax1.legend()
 ax1.set_title(variable_cut+"-axis cut with "+str(-0.5)+"<y< "+str(0.5))
-
-
