@@ -15,114 +15,8 @@ import matplotlib.lines as mlines
 import glob as glob
 import math as math
 import scipy.ndimage.filters as filters
-from PIL import Image
-
-#%%
-
-"""Import system data like efficiency, particle's range, etc"""
-
-a = pd.read_csv('C:/Users/jacob/OneDrive - Universidade de Santiago de Compostela/Documentos (Escritorio)/Física/0. Laboratorio DGD/Imágenes Teledyne/datos.csv')
-cal=float(a['cal_fab']) ; T=float(a['T']) ; qeff=float(a['qeff']) ; geomeff=float(a['geomeff'])
-Rtubo=float(a['Rtubo']) ; Rgem=float(a['Rgem']) ; RCSDA=float(a['RCSDA'])
-
-#%%
-
-"""Load an image and get its optcial gain, plot, and total photons"""
-
-class optical_gain:
-        
-    def __init__(self, path, file):
-         
-        self.image = Image.open(path+file)
-        self.data  = np.array(self.image)
-        self.data_plot = np.zeros(np.shape(self.data)[1])
-        
-    def plot_data(self,pie=100,cal=1.,qeff=None,geomeff=None,T=None):
-        
-        # Quitamos el ruido electrónico
-        for i in range(np.shape(self.data)[0]):
-            for j in range(np.shape(self.data)[1]):
-                if self.data[i,j] < pie:
-                    self.data[i,j] = 0
-                else:
-                    self.data[i,j] = self.data[i,j]-pie
-                    
-        if qeff==None:
-            self.data = self.data
-        else:
-            self.data = self.data/qeff
-    
-        if T==None:
-            self.data = self.data
-        else:
-            self.data = self.data/T
-
-        if geomeff==None:
-            self.data = self.data
-        else:
-            self.data = self.data/geomeff
-    
-        # Multiplicamos por el factor de ganancia de la cámara
-        self.data = self.data*1.32
-
-        for i in range(np.shape(self.data)[0]):
-            self.data_plot = self.data_plot + self.data[i,:]
-
-        # Centramos el eje x
-        self.x = np.arange(0,len(self.data_plot),1) - (np.where(self.data_plot==max(self.data_plot)))[0][0]
-        self.x = self.x/cal
-
-        plt.figure(figsize=(10,6),dpi=120)
-        plt.title('Número de fotones totales en función de x')
-        plt.grid(True)
-
-        # Centro x=0
-        plt.axvline(x=0, color='black', linestyle='--')
-    
-        # Límites de el rango de la partícula alpha
-        plt.axvline(x=RCSDA, color='green',linestyle='-',label=u'$R_{CSDA}$')
-        plt.axvline(x=-RCSDA,color='green',linestyle='-')
-    
-        # Límites del fatGEM
-        plt.axvline(x=Rgem, color='red',linestyle='-',label=u'$fatGEM$')
-        plt.axvline(x=-Rgem,color='red',linestyle='-')
-    
-        # Límites del tubo    
-        plt.axvline(x=Rtubo, color='blue',linestyle='-',label=u'$Tubo$')
-        plt.axvline(x=-Rtubo,color='blue',linestyle='-')
-
-        if cal>1:
-           plt.xticks(np.arange(int(min(self.x)),int(max(self.x)),1))
-        plt.ylabel('photons',size=10)
-        plt.xlabel('x(cm)',size=10)
-        plt.plot(self.x, self.data_plot, '-', color='black')
-        
-        plt.legend(loc='best')
-        
-        return(self.data,self.data_plot)
-        
-    def gain(self,data_plot):
-        
-        self.total_photons = np.sum(data_plot)
-        print('El número total de fotones es de %f' %np.sum(self.total_photons))
-
-        E = 5.5e6 ; W = 26.7 ; A = 500
-        self.electrons = 30*A*E/W
-        self.gain = self.total_photons/self.electrons
-        print('Eficiencia fotones/e_primario: %.3f'%self.gain)
-        return(self.gain)
-    
-# Path a una imagen real en .tiff ***ORIGINAL***
-path = 'C:/Users/jacob/RareEventsGroup Dropbox/HOME_RareEventsGroup/SETUPS/BAT/Data/2023/Teledyne_captures/test4 7-2/fatgem v down test/exp 30s test19/'
-file = 'ss_single_1.tiff'
-
-image = optical_gain(path=path,file=file)
-data,data_x = image.plot_data(pie=100,cal=cal,qeff=qeff,geomeff=geomeff,T=T)
-gain = image.gain(data_x)
 
 
-
-#%%
 #Lets define the classes
 class Source:
     
@@ -342,7 +236,130 @@ class Noise():
         
         return Hist2d+random_gauss
 
+class Image_2D():
     
+    """This class is essentially a 2D histogram that also stores extra information at the truth level:
+        how many tracks were produced, their positions, the positions of the electrons, etc. This
+        is done with numpy.histogram2d and the axis are already inverted..
+        
+        This object will be exported and loaded by our analysis framework"""
+        
+    def __init__(self,track_list,hist_args={"bins":10}):
+        
+        #List of tracks
+        self.track_list=track_list
+
+        #Get a list of all electron positions in all tracks
+        self.x_pos=np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,0] for i in range(len(track_list))]))
+        self.y_pos=np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,1] for i in range(len(track_list))]))
+        
+        #Get a list of all the true electron's positions in all tracks
+        self.x_pos_true=np.ndarray.flatten(np.asarray([track_list[i].electron_positions[:,0] for i in range(len(track_list))]))
+        self.y_pos_true=np.ndarray.flatten(np.asarray([track_list[i].electron_positions[:,1] for i in range(len(track_list))]))
+    
+    
+        #Get the 2d hist and the edges from the list of tracks. Extra arguments can be passed to the
+        #2D numpy histogram function
+        self.Hist2D,self.x_edges,self.y_edges=np.histogram2d(x=self.x_pos,y=self.y_pos,**hist_args)
+        #Since numpy inverts the (y,x) histogram, invert it again
+        self.Hist2D=self.Hist2D.T
+        
+    
+    def track_plot(self,fig_in=None,axis_list_in=None):
+        
+        """This plots the generated tracks in a 2D image. It's advisable not to do it if the number
+        of tracks is too high because it will take time"""
+        
+        #If a figure and axis are provided, use them. Otherwise come up with our own
+        if fig_in==None or axis_list_in==None:
+            fig=plt.figure(figsize=(6,6))
+            ax=fig.add_subplot(1,2,1)
+            ax2=fig.add_subplot(1,2,2)
+            
+        else:
+            fig=fig_in
+            ax=axis_list_in[0]
+            ax2=axis_list_in[1]
+        
+        #===Plot section===
+        #This is super slow if you have to do it track by track. Just skip it if there are too many
+        if n_tracks<100:
+
+            #Plot the tracks
+            for i in range(len(self.track_list)):
+                
+                ax.plot([track_list[i].x0,track_list[i].x],[track_list[i].y0,track_list[i].y])        
+        
+            ax.set_xlabel("x (cm) ")
+            ax.set_ylabel("y (cm) ")
+            ax.set_title("Original tracks")
+        
+            #Plot the tracks
+            for i in range(len(track_list)):
+                
+                ax2.scatter(track_list[i].electron_positions[:,0],track_list[i].electron_positions[:,1],marker="o")
+        
+            #Restart the color cyle of the axis
+            ax2.set_prop_cycle(None)
+            
+            #Plot the tracks with the diffused electrons
+            for i in range(len(track_list)):
+                
+                ax2.scatter(track_list[i].electron_positions_diff[:,0],track_list[i].electron_positions_diff[:,1],marker="x")
+            
+            ax2.set_xlabel("x (cm) ")
+            ax2.set_ylabel("y (cm) ")
+            ax2.set_title("Electron positions")
+            
+        return fig
+            
+    def plot_hist(self,fig_in=None,axis_list_in=None,noise_object=None,exposition_time=0):
+        """This simply plots the 2D histogram"""
+    
+        H, yedges, xedges=self.Hist2D,self.y_edges,self.x_edges
+        
+        #If a figure and axis are provided, use them. Otherwise come up with our own
+        if fig_in==None or axis_list_in==None:
+            #Create a figure
+            fig, (ax1,ax2) = plt.subplots(ncols=2)
+            
+        else:
+            fig=fig_in
+            ax1=axis_list_in[0]
+            ax2=axis_list_in[1]
+        
+        
+
+        #Plot it
+        ax1.pcolormesh(xedges, yedges, H, cmap='rainbow',vmin = np.min(H), vmax = np.max(H))
+        
+        #ax1.plot(x, 2*np.log(x), 'k-')
+        
+        ax1.set_xlim(self.x_pos.min(), self.x_pos.max())
+        ax1.set_ylim(self.y_pos.min(), self.y_pos.max())
+        ax1.set_xlabel('x')
+        ax1.set_ylabel('y')
+        ax1.set_title('Nº of tracks '+ str(len(self.track_list))+" , equivalent to "+str(len(self.track_list)/500)+" s exposure time")
+        
+        #Add the noise
+        H2=noise_object.add_noise(exposition_time=exposition_time, Hist2d=H)
+        
+        #Plot it
+        mesh2=plt.pcolormesh(xedges, yedges, H2, cmap='rainbow',vmin = np.min(H), vmax = np.max(H))
+        ax2.pcolormesh(xedges, yedges, H2, cmap='rainbow',vmin = np.min(H), vmax = np.max(H))
+        
+        fig.colorbar(mesh2, ax=[ax1, ax2])
+        
+        #ax1.plot(x, 2*np.log(x), 'k-')
+        
+        ax2.set_xlim(self.x_pos.min(), self.x_pos.max())
+        ax2.set_ylim(self.y_pos.min(), self.y_pos.max())
+        ax2.set_xlabel('x')
+        ax2.set_ylabel('y')
+        ax2.set_title('Nº of tracks '+ str(len(self.track_list))+" , equivalent to "+str(len(self.track_list)/500)+" s exposure time with noise")
+
+        return fig
+
 #==This is the main program==
 #Create an argon object from the gas class
 argon=Gas(1,1,1,1,1)
@@ -370,103 +387,11 @@ for i in track_list: i.fill()
 #Create a noise object with a given dark noise
 noise=Noise(50)
 
-
-#===Plot section===
-#This is super slow if you have to do it track by track. Just skip it if there are too many
-if n_tracks<100:
-    #Plot the current resut
-    fig=plt.figure(figsize=(6,6))
-    #fig.subplots_adjust(wspace=0.5,hspace=0.3)
-    ax=fig.add_subplot(1,2,1)
-    ax2=fig.add_subplot(1,2,2)
-    #Plot the tracks
-    for i in range(len(track_list)):
-        
-        ax.plot([track_list[i].x0,track_list[i].x],[track_list[i].y0,track_list[i].y])        
-
-    ax.set_xlabel("x (cm) ")
-    ax.set_ylabel("y (cm) ")
-
-    #Plot the tracks
-    for i in range(len(track_list)):
-        
-        ax2.scatter(track_list[i].electron_positions[:,0],track_list[i].electron_positions[:,1],marker="o")
-
-    #Restart the color cyle of the axis
-    ax2.set_prop_cycle(None)
-    
-    #Plot the tracks with the diffused electrons
-    for i in range(len(track_list)):
-        
-        ax2.scatter(track_list[i].electron_positions_diff[:,0],track_list[i].electron_positions_diff[:,1],marker="x")
-    
-    ax2.set_xlabel("x (cm) ")
-    ax2.set_ylabel("y (cm) ")
+#Plot the tracks
+image2d=Image_2D(track_list=track_list,hist_args={"bins":20})
+#Plot the tracks
+image2d.track_plot()
+image2d.plot_hist(noise_object=noise,exposition_time=exposition_time)
 
 
-
-#Get a list of all electron positions in all tracks
-x_pos=np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,0] for i in range(len(track_list))]))
-y_pos=np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,1] for i in range(len(track_list))]))
-
-#Get the 2d hist
-H, yedges, xedges = np.histogram2d(y_pos, x_pos, bins=30)
-#Create a figure
-fig, (ax1,ax2) = plt.subplots(ncols=2)
-#Plot it
-ax1.pcolormesh(xedges, yedges, H, cmap='rainbow',vmin = np.min(H), vmax = np.max(H))
-
-#ax1.plot(x, 2*np.log(x), 'k-')
-
-ax1.set_xlim(x_pos.min(), x_pos.max())
-ax1.set_ylim(y_pos.min(), y_pos.max())
-ax1.set_xlabel('x')
-ax1.set_ylabel('y')
-ax1.set_title('Nº of tracks '+ str(n_tracks)+" , equivalent to "+str(n_tracks/500)+" s exposure time")
-
-#Add the noise
-H2=noise.add_noise(exposition_time=exposition_time, Hist2d=H)
-
-#Plot it
-mesh2=plt.pcolormesh(xedges, yedges, H2, cmap='rainbow',vmin = np.min(H), vmax = np.max(H))
-ax2.pcolormesh(xedges, yedges, H2, cmap='rainbow',vmin = np.min(H), vmax = np.max(H))
-
-fig.colorbar(mesh2, ax=[ax1, ax2])
-
-#ax1.plot(x, 2*np.log(x), 'k-')
-
-ax2.set_xlim(x_pos.min(), x_pos.max())
-ax2.set_ylim(y_pos.min(), y_pos.max())
-ax2.set_xlabel('x')
-ax2.set_ylabel('y')
-ax2.set_title('Nº of tracks '+ str(n_tracks)+" , equivalent to "+str(n_tracks/500)+" s exposure time with noise")
-
-
-
-#Get the x position of the electrons whose y position fulfills min_var<y<max_var for each track
-electron_cut=[];variable_cut="x";other_variable="y"
-for track in track_list:
-    #Get the cut
-    electron_cut=track.select(variable_cut,min_var=-0.5,max_var=0.5,array_to_store=electron_cut)
-    
-#Create a figure
-le_hist=np.histogram(electron_cut,bins=15)
-fig, ax1 = plt.subplots(ncols=1)
-ax1.hist(electron_cut,bins=15,fill=False,label="Montecarlo")
-ax1.set_xlabel("x (cm)")
-ax1.set_ylabel("N")
-
-#Compare with some of Jacobo's data
-
-path="C:/Users/jacob/OneDrive - Universidade de Santiago de Compostela/Documentos (Escritorio)/Física/0. Laboratorio DGD/Imágenes Teledyne/Fat gem 8 to 0 medidas/corte x/" 
-data_df=pd.read_csv(path+"data.csv")
-
-# Hay 58 px entre agujeros y 5 mm entre agujeros
-cal = 58/5 *10 #11.6 px/mm
-
-#ax1.bar(data_df["px"]*2/2500,data_df["1"]*max(le_hist[0])/max(data_df["1"]),fill=False)
-ax1.scatter(data_df["px"]*2/2500-1.12,data_df["19"]*max(le_hist[0])/max(data_df["19"]),c="k",label="Data")
-ax1.legend()
-
-ax1.set_title(variable_cut+"-axis cut with "+str(-0.5)+"<y< "+str(0.5))
 
