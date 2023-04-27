@@ -22,7 +22,7 @@ class Source:
     
     """This is the source class. It includes all the relevant information about the source"""
     
-    def __init__(self,rate=500,energy=5.5,radius=1): #Jacobo
+    def __init__(self,rate=500,energy=5.5,radius=1):
         
         self.rate=rate #In Hz
         
@@ -30,7 +30,7 @@ class Source:
         
         self.radius=radius # In cm
         
-    def produce_alpha(self,n,store,phi_in=None,ath_in=None,theta=None): #Jacobo
+    def produce_alpha(self,n,store,phi_in=None,ath_in=None,theta=None): 
         """This method produces an alpha track from the alpha_tracks class"""
         
         for i in range(n):
@@ -43,9 +43,7 @@ class Source:
                 ath=np.random.rand()*np.pi/2
             else:
                 ath=ath_in
-                
-    # ______Jacobo_____________________________________________________________
-            
+                            
             theta=np.random.rand()*2*np.pi
 
             x0=np.cos(theta)*self.radius*np.random.rand()
@@ -53,7 +51,6 @@ class Source:
                  
             alpha=Alphas_tracks(phi=phi,ath=ath,x0=x0,y0=y0)
             store.append(alpha)
-    # _________________________________________________________________________            
             
         return store
         
@@ -76,7 +73,7 @@ class Alphas_tracks:
     
     """
     
-    def __init__(self,range_alpha=1,phi=None,ath=None,x0=None,y0=None,spread=0,ionization_profile="Flat"): #Jacobo
+    def __init__(self,range_alpha=1,phi=None,ath=None,x0=None,y0=None,spread=0,ionization_profile="Flat"):
                 
         #This is the range of the alpha. Get it from NIST
         self.range_max=range_alpha #In cm
@@ -86,20 +83,15 @@ class Alphas_tracks:
         
         #Define an effective range
         self.range=self.range_max*np.cos(ath)
-                
-        # ______Jacobo_________________________________________________________
-      
+                      
         self.x0=x0
         self.y0=y0
       
         #X position in the plane
         self.x= np.cos(phi)*self.range*np.cos(ath) + self.x0 
-        # + fuente.radius*np.random.rand() 
         
         #Y position in the plane
         self.y=np.sin(phi)*self.range*np.cos(ath)  + self.y0
-        # + fuente.radius*np.random.rand()  
-        # _____________________________________________________________________
         
         #Phi angle
         self.phi=phi
@@ -134,21 +126,16 @@ class Alphas_tracks:
         #Draw a number from the ionization profile distribution
         #self.ionization_profile=1
         for i in range(self.n_electrons):
+            
             #Get the radial position of the electron alongside the track
             r_pos=self.ionization_profile()*self.range
+            
             #Change the positions
-            
-            # ______Jacobo_____________________________________________________
-            
-            # En principio debería también de cambiar las posiciones de estos 
-            # electrones
-            
             self.electron_positions[i,0]=np.cos(self.phi)*r_pos + self.x0
             self.electron_positions[i,1]=np.sin(self.phi)*r_pos + self.y0
             #Change the positions
             self.electron_positions_diff[i,0]=np.cos(self.phi)*r_pos + self.x0
             self.electron_positions_diff[i,1]=np.sin(self.phi)*r_pos + self.y0
-            # _________________________________________________________________
 
             if self.spread!=0:
                 #Now we need to draw the number from the gaussian distribution
@@ -283,29 +270,29 @@ class Image_2D():
         
         #===Plot section===
         #This is super slow if you have to do it track by track. Just skip it if there are too many
-        if n_tracks<100:
+        if len(self.track_list)<100:
 
             #Plot the tracks
             for i in range(len(self.track_list)):
                 
-                ax.plot([track_list[i].x0,track_list[i].x],[track_list[i].y0,track_list[i].y])        
+                ax.plot([self.track_list[i].x0,self.track_list[i].x],[self.track_list[i].y0,self.track_list[i].y])        
         
             ax.set_xlabel("x (cm) ")
             ax.set_ylabel("y (cm) ")
             ax.set_title("Original tracks")
         
             #Plot the tracks
-            for i in range(len(track_list)):
+            for i in range(len(self.track_list)):
                 
-                ax2.scatter(track_list[i].electron_positions[:,0],track_list[i].electron_positions[:,1],marker="o")
+                ax2.scatter(self.track_list[i].electron_positions[:,0],self.track_list[i].electron_positions[:,1],marker="o")
         
             #Restart the color cyle of the axis
             ax2.set_prop_cycle(None)
             
             #Plot the tracks with the diffused electrons
-            for i in range(len(track_list)):
+            for i in range(len(self.track_list)):
                 
-                ax2.scatter(track_list[i].electron_positions_diff[:,0],track_list[i].electron_positions_diff[:,1],marker="x")
+                ax2.scatter(self.track_list[i].electron_positions_diff[:,0],self.track_list[i].electron_positions_diff[:,1],marker="x")
             
             ax2.set_xlabel("x (cm) ")
             ax2.set_ylabel("y (cm) ")
@@ -359,39 +346,3 @@ class Image_2D():
         ax2.set_title('Nº of tracks '+ str(len(self.track_list))+" , equivalent to "+str(len(self.track_list)/500)+" s exposure time with noise")
 
         return fig
-
-#==This is the main program==
-#Create an argon object from the gas class
-argon=Gas(1,1,1,1,1)
-#Create a source and a list to store
-
-# ______Jacobo_________________________________________________________________
-source=Source(radius=0.1)
-track_list=[]
-
-#Creat some alpha tracks and set some parameters
-n_tracks=10;ath_angle=0
-
-exposition_time=n_tracks/source.rate #In seconds
-
-source.produce_alpha(n=n_tracks,ath_in=None,store=track_list)
-#______________________________________________________________________________
-
-#Create a difussion handler and change the diffusion of the tracks
-diff_handler=Diffusion_handler()
-diff_handler.diffuse(track_list)
-
-#Generate the electrons alongside the tracks
-for i in track_list: i.fill()
-
-#Create a noise object with a given dark noise
-noise=Noise(50)
-
-#Plot the tracks
-image2d=Image_2D(track_list=track_list,hist_args={"bins":20})
-#Plot the tracks
-image2d.track_plot()
-image2d.plot_hist(noise_object=noise,exposition_time=exposition_time)
-
-
-
