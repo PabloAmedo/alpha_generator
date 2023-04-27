@@ -41,7 +41,7 @@ noise=Noise(50)
 image2d=Image_2D(track_list=track_list,hist_args={"bins":20})
 # #Plot the tracks
 image2d.track_plot()
-image2d.plot_hist(noise_object=noise,exposition_time=exposition_time)
+# image2d.plot_hist(noise_object=noise,exposition_time=exposition_time)
 
 
 
