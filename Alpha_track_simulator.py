@@ -15,7 +15,7 @@ import matplotlib.lines as mlines
 import glob as glob
 import math as math
 import scipy.ndimage.filters as filters
-from bethe_blosch import*
+from bragg_peak import*
 
 
 
@@ -47,6 +47,7 @@ class Source:
         else:
             self.x=None
             self.Sp=None
+            self.acum=None
 
         for i in range(n):
             if phi_in==None:
@@ -221,7 +222,7 @@ class Diffusion_handler(Gas):
         
         #Take an alpha track and add a difussion
         for track in alpha_list:
-            track.spread=0.01
+            track.spread=0.1
     
 class Noise():
 
@@ -381,3 +382,17 @@ class Image_2D():
         ax2.set_title('Nº of tracks '+ str(len(self.track_list))+" , equivalent to "+str(len(self.track_list)/500)+" s exposure time with noise")
 
         return fig
+    
+    def plot_x(self):
+        electron_cut=[];variable_cut='x';other_variable='y'
+        for track in self.track_list:
+            electron_cut=track.select(variable_cut,min_var=-0.5,max_var=0.5,array_to_store=electron_cut)
+        
+        le_hist=np.histogram(electron_cut,bins=100)
+        self.le_hist=le_hist
+        self.electron_cut=electron_cut
+        
+        return (self.le_hist,self.electron_cut)
+    
+    
+    
