@@ -5,9 +5,10 @@ Created on Wed Apr 19 10:48:14 2023
 @author: jacob
 """
 
-from alpha_track_simulator import*
+from Alpha_track_simulator import*
 
 
+#%%
 
 #==This is the main program==
 #Create an argon object from the gas class
@@ -18,7 +19,7 @@ source=Source(radius=0.1)
 track_list=[]
 
 #Creat some alpha tracks and set some parameters
-n_tracks=10;ath_angle=0
+n_tracks=10000;ath_angle=0
 
 exposition_time=n_tracks/source.rate #In seconds
 
@@ -41,7 +42,7 @@ noise=Noise(50)
 image2d=Image_2D(track_list=track_list,hist_args={"bins":20})
 # #Plot the tracks
 image2d.track_plot()
-# image2d.plot_hist(noise_object=noise,exposition_time=exposition_time)
+image2d.plot_hist(noise_object=noise,exposition_time=exposition_time)
 
 
 
