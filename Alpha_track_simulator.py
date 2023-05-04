@@ -26,7 +26,7 @@ class Source:
     
     """This is the source class. It includes all the relevant information about the source"""
     
-    def __init__(self,rate=500,energy=5.5,radius=1,M=933,range_alpha=5.5):
+    def __init__(self,rate=500,energy=5.5,radius=0.35,M=933,range_alpha=5.5):
         
         self.rate=rate #In Hz
         
@@ -214,15 +214,17 @@ class Diffusion_handler(Gas):
 
     """This class handles the application of diffusion from the gas. It inherits from the gass
     class"""
-    def __init__(self):
+    def __init__(self,sigma_diff=0.25,sigma_PSF=0.65):
 
         self.u=1
+        self.sigma_diff=sigma_diff
+        self.sigma_PSF=sigma_PSF
         
     def diffuse(self,alpha_list):
         
         #Take an alpha track and add a difussion
         for track in alpha_list:
-            track.spread=0.1
+            track.spread= ( self.sigma_diff**2 + self.sigma_PSF )**0.5  # Desviación estándar de la Gaussiana (7.5 mm??? too much???)
     
 class Noise():
 
