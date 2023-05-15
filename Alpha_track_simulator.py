@@ -15,14 +15,18 @@ import matplotlib.lines as mlines
 import glob as glob
 import math as math
 import scipy.ndimage.filters as filters
+from bragg_peak import*
 
+
+
+#%%
 
 #Lets define the classes
 class Source:
     
     """This is the source class. It includes all the relevant information about the source"""
     
-    def __init__(self,rate=500,energy=5.5,radius=1):
+    def __init__(self,rate=500,energy=5.5,radius=0.35,M=933,range_alpha=5.5):
         
         self.rate=rate #In Hz
         
@@ -30,9 +34,21 @@ class Source:
         
         self.radius=radius # In cm
         
-    def produce_alpha(self,n,store,phi_in=None,ath_in=None,theta=None): 
-        """This method produces an alpha track from the alpha_tracks class"""
+        self.range_alpha=range_alpha
         
+        self.M=M
+        self.z=2
+    
+    def produce_alpha(self,n,store,ionization_profile,phi_in=None,ath_in=None,theta=None): 
+        """This method produces an alpha track from the alpha_tracks class"""        
+        
+        if ionization_profile=='Bragg':
+            self.x,self.Sp,self.acum=bragg_peak(self.energy,self.range_alpha)
+        else:
+            self.x=None
+            self.Sp=None
+            self.acum=None
+
         for i in range(n):
             if phi_in==None:
                 phi=np.random.rand()*2*np.pi
@@ -49,7 +65,7 @@ class Source:
             x0=np.cos(theta)*self.radius*np.random.rand()
             y0=np.sin(theta)*self.radius*np.random.rand()
                  
-            alpha=Alphas_tracks(phi=phi,ath=ath,x0=x0,y0=y0)
+            alpha=Alphas_tracks(x=self.x,acum=self.acum,range_alpha=self.range_alpha,phi=phi,ath=ath,x0=x0,y0=y0,ionization_profile=ionization_profile)
             store.append(alpha)
             
         return store
@@ -64,17 +80,31 @@ class Gas:
         self.Dl=Dl
         self.Wi=Wi
         self.density=density
+        
+        
+        self.A=40
+        self.Z=18
+        self.I=25.7e-6 #Mev
+        
+
+        q=1.6e-19
+        me=0.511
+        re=2.8e-13
+        NA=6.022e23
+        
             
 class Alphas_tracks:
     
     """This is the alpha class. It contains all the relevant information about the alpha track,
-    like the ionization profile, positions of electrons, etc
+    like the ionization profile, positions of electrons, etc"""
     
-    
-    """
-    
-    def __init__(self,range_alpha=1,phi=None,ath=None,x0=None,y0=None,spread=0,ionization_profile="Flat"):
-                
+    def __init__(self,x,acum,range_alpha,phi=None,ath=None,x0=None,y0=None,spread=0,ionization_profile="Flat"):
+        
+        self.ionization=ionization_profile
+        self.X=x
+        self.acum=acum            #si no da error
+                                  #son vectores x y Sp, necesarios para los randoms
+        
         #This is the range of the alpha. Get it from NIST
         self.range_max=range_alpha #In cm
         
@@ -100,12 +130,17 @@ class Alphas_tracks:
         self.spread=spread
         
         #Set the ionization profile to be flat between the 0 and the range
-        self.dict_ion_prof={"Flat":np.random.rand}
+        self.dict_ion_prof={
+            "Flat":np.random.rand,
+            "Bragg":random_bragg
+            }
         
-        self.ionization_profile=self.dict_ion_prof[ionization_profile]
+        self.ionization_profile=self.dict_ion_prof[self.ionization]
         
         #Number of electrons in a track
-        self.n_electrons=50
+        # self.n_electrons=source.energy/Gas.I
+        # self.n_electrons=50
+        self.n_electrons=214007
         
         #Storage of electrons (x,y) positions
         self.electron_positions=np.zeros([self.n_electrons,2]) # coordenadas [x,y] para los 50 electrones
@@ -128,8 +163,11 @@ class Alphas_tracks:
         for i in range(self.n_electrons):
             
             #Get the radial position of the electron alongside the track
-            r_pos=self.ionization_profile()*self.range
-            
+            if self.ionization=='Bragg':
+                r_pos=self.ionization_profile(self.X,self.acum)*self.range
+            else:
+                r_pos=self.ionization_profile()*self.range
+                            
             #Change the positions
             self.electron_positions[i,0]=np.cos(self.phi)*r_pos + self.x0
             self.electron_positions[i,1]=np.sin(self.phi)*r_pos + self.y0
@@ -152,6 +190,9 @@ class Alphas_tracks:
                     self.electron_positions_diff[i,0]+=-np.sin(self.phi)*abs(r_pos_new)
                     
                     self.electron_positions_diff[i,1]+=np.cos(self.phi)*abs(r_pos_new)
+                    
+            
+            
             
 
     def select(self,variable_scan="x",min_var=0,max_var=100,array_to_store=None):
@@ -173,20 +214,21 @@ class Alphas_tracks:
                 
         return array_to_store
                 
-
 class Diffusion_handler(Gas):
 
     """This class handles the application of diffusion from the gas. It inherits from the gass
     class"""
-    def __init__(self):
+    def __init__(self,sigma_diff=0.25,sigma_PSF=0.48):
 
         self.u=1
+        self.sigma_diff=sigma_diff
+        self.sigma_PSF=sigma_PSF
         
     def diffuse(self,alpha_list):
         
         #Take an alpha track and add a difussion
         for track in alpha_list:
-            track.spread=0.01
+            track.spread= ( self.sigma_diff**2 + self.sigma_PSF )**0.5  # Desviación estándar de la Gaussiana (7.5 mm??? too much???)
     
 class Noise():
 
@@ -303,7 +345,7 @@ class Image_2D():
     def plot_hist(self,fig_in=None,axis_list_in=None,noise_object=None,exposition_time=0):
         """This simply plots the 2D histogram"""
     
-        H, yedges, xedges=self.Hist2D,self.y_edges,self.x_edges
+        H,yedges,xedges=self.Hist2D,self.y_edges,self.x_edges
         
         #If a figure and axis are provided, use them. Otherwise come up with our own
         if fig_in==None or axis_list_in==None:
@@ -346,3 +388,17 @@ class Image_2D():
         ax2.set_title('Nº of tracks '+ str(len(self.track_list))+" , equivalent to "+str(len(self.track_list)/500)+" s exposure time with noise")
 
         return fig
+    
+    def plot_x(self):
+        electron_cut=[];variable_cut='x';other_variable='y'
+        for track in self.track_list:
+            electron_cut=track.select(variable_cut,min_var=-0.5,max_var=0.5,array_to_store=electron_cut)
+        
+        le_hist=np.histogram(electron_cut,bins=100)
+        self.le_hist=le_hist
+        self.electron_cut=electron_cut
+        
+        return (self.le_hist,self.electron_cut)
+    
+    
+    
