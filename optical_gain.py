@@ -17,48 +17,50 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-class optical_gain:
-        
-    def __init__(self, path, file):
-         
+
+
+class data_image():
+    
+    '''This class loads an image and plot it'''
+    
+    def __init__(self,path,file,pie=100):
+                 
         self.image = Image.open(path+file)
         self.data  = np.array(self.image)
         self.data_plot = np.zeros(np.shape(self.data)[1])
         
-    def plot_data(self,RCSDA=1,Rgem=1,Rtubo=1,pie=100,cal=1.,qeff=1,geomeff=1,T=1):
         
         # Quitamos el ruido electrónico
-        for i in range(np.shape(self.data)[0]):
-            for j in range(np.shape(self.data)[1]):
-                if self.data[i,j] < pie:
-                    self.data[i,j] = 0
-                else:
-                    self.data[i,j] = self.data[i,j]-pie
-                    
-        if qeff==1:
-            self.data = self.data
-        else:
-            self.data = self.data/qeff
-    
-        if T==1:
-            self.data = self.data
-        else:
-            self.data = self.data/T
+        # for i in range(np.shape(self.data)[0]):
+        #     for j in range(np.shape(self.data)[1]):
+        #         if self.data[i,j] < pie:
+        #             self.data[i,j] = 0
+        #         else:
+        #             self.data[i,j] = self.data[i,j]-pie
+        #-------------------------------------------------
+        self.data[self.data<pie]=0
+        self.data[self.data>=pie]-=pie     
+        #-------------------------------------------------                    
+        '''Quitamos el ruido electrónico en la propia inicialización
+        de la imagen, en caso de no querer hacerlo simplemente pie=0
+        '''
 
-        if geomeff==1:
-            self.data = self.data
-        else:
-            self.data = self.data/geomeff
-    
-        # Multiplicamos por el factor de ganancia de la cámara
-        self.data = self.data*1.32
-
-        for i in range(np.shape(self.data)[0]):
-            self.data_plot = self.data_plot + self.data[i,:]
+    def plot_data(self,RCSDA=1,Rgem=1,Rtubo=1,cal=1.):
+        
+        '''
+        Esta función es ÚNICAMENTE para plotear los datos en x
+        '''
+                
+        # for i in range(np.shape(self.data)[0]):
+        #     self.data_plot = self.data_plot + self.data[i,:]
+        #-------------------------------------------------
+        self.data_to_plot_x = np.sum(self.data,axis=0)
+        #-------------------------------------------------
 
         # Centramos el eje x
-        self.x = np.arange(0,len(self.data_plot),1) - (np.where(self.data_plot==max(self.data_plot)))[0][0]
+        self.x = np.arange(0,len(self.data_to_plot_x),1) - (np.where(self.data_to_plot_x==max(self.data_to_plot_x)))[0][0]
         self.x = self.x/cal
+
 
         plt.figure(figsize=(10,6),dpi=120)
         plt.title('Número de fotones totales en función de x')
@@ -81,21 +83,44 @@ class optical_gain:
 
         if cal>1:
            plt.xticks(np.arange(int(min(self.x)),int(max(self.x)),1))
+           
         plt.ylabel('photons',size=10)
         plt.xlabel('x(cm)',size=10)
-        plt.plot(self.x, self.data_plot, '-', color='black')
+        plt.plot(self.x, self.data_to_plot_x, '-', color='black')
         
         plt.legend(loc='best')
-        
+    
       
-    def gain(self,data_plot):
+    def gain(self,qeff=1,geomeff=1,T=1,E=5.5,W=26.7e-6,A=500):
         
-        self.total_photons = np.sum(data_plot)
+        '''
+        Aquí obtenemos la ganancia óptica
+        '''           
+        
+        if qeff==1:
+            self.data = self.data
+        else:
+            self.data = self.data/qeff
+    
+        if T==1:
+            self.data = self.data
+        else:
+            self.data = self.data/T
+
+        if geomeff==1:
+            self.data = self.data
+        else:
+            self.data = self.data/geomeff
+    
+        # Multiplicamos por el factor de ganancia de la cámara
+        self.data = self.data*1.32
+
+
+        self.total_photons = np.sum(self.data)
         print('El número total de fotones es de %f' %np.sum(self.total_photons))
 
-        E = 5.5e6 ; W = 26.7 ; A = 500
         self.electrons = 30*A*E/W
         self.gain = self.total_photons/self.electrons
         print('Eficiencia fotones/e_primario: %.3f'%self.gain)
-        return(self.gain)
-    
+
+        

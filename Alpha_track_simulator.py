@@ -84,7 +84,7 @@ class Gas:
         
         self.A=40
         self.Z=18
-        self.I=15.8e-6 #Mev
+        self.I=25.7e-6 #Mev
         
 
         q=1.6e-19
@@ -138,8 +138,9 @@ class Alphas_tracks:
         self.ionization_profile=self.dict_ion_prof[self.ionization]
         
         #Number of electrons in a track
-        # self.n_electrons=Source.energy/Gas.I
-        self.n_electrons=50
+        # self.n_electrons=source.energy/Gas.I
+        # self.n_electrons=50
+        self.n_electrons=214007
         
         #Storage of electrons (x,y) positions
         self.electron_positions=np.zeros([self.n_electrons,2]) # coordenadas [x,y] para los 50 electrones
@@ -189,6 +190,9 @@ class Alphas_tracks:
                     self.electron_positions_diff[i,0]+=-np.sin(self.phi)*abs(r_pos_new)
                     
                     self.electron_positions_diff[i,1]+=np.cos(self.phi)*abs(r_pos_new)
+                    
+            
+            
             
 
     def select(self,variable_scan="x",min_var=0,max_var=100,array_to_store=None):
@@ -214,7 +218,7 @@ class Diffusion_handler(Gas):
 
     """This class handles the application of diffusion from the gas. It inherits from the gass
     class"""
-    def __init__(self,sigma_diff=0.25,sigma_PSF=0.65):
+    def __init__(self,sigma_diff=0.25,sigma_PSF=0.48):
 
         self.u=1
         self.sigma_diff=sigma_diff
@@ -341,7 +345,7 @@ class Image_2D():
     def plot_hist(self,fig_in=None,axis_list_in=None,noise_object=None,exposition_time=0):
         """This simply plots the 2D histogram"""
     
-        H, yedges, xedges=self.Hist2D,self.y_edges,self.x_edges
+        H,yedges,xedges=self.Hist2D,self.y_edges,self.x_edges
         
         #If a figure and axis are provided, use them. Otherwise come up with our own
         if fig_in==None or axis_list_in==None:
