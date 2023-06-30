@@ -19,7 +19,6 @@ from bragg_peak import*
 
 
 
-#%%
 
 #Lets define the classes
 class Source:
@@ -98,7 +97,7 @@ class Alphas_tracks:
     """This is the alpha class. It contains all the relevant information about the alpha track,
     like the ionization profile, positions of electrons, etc"""
     
-    def __init__(self,x,acum,range_alpha,phi=None,ath=None,x0=None,y0=None,spread=0,ionization_profile="Flat"):
+    def __init__(self,x,acum,range_alpha,phi=None,ath=None,x0=None,y0=None,spread=0,ionization_profile="Flat",n_electrons=214007):
         
         self.ionization=ionization_profile
         self.X=x
@@ -140,7 +139,7 @@ class Alphas_tracks:
         #Number of electrons in a track
         # self.n_electrons=source.energy/Gas.I
         # self.n_electrons=50
-        self.n_electrons=214007
+        self.n_electrons=n_electrons
         
         #Storage of electrons (x,y) positions
         self.electron_positions=np.zeros([self.n_electrons,2]) # coordenadas [x,y] para los 50 electrones
@@ -240,13 +239,14 @@ class Noise():
     
     """
     
-    def __init__(self,dark_current):
+    def __init__(self,dark_current=190):
         
-        #Dark_current (electrons/s)
+        #Dark_current (electrons/s) of the camera is 190 e/s. This depends exponentially on the
+        #temperature
         self.dark_current=dark_current
         
 
-    def add_noise(self,exposition_time,Hist2d):
+    def add_noise(self,exposition_time,Hist2d,sigma=5.7):
 
         """This method adds noise to each pixel of a 2D histogram as a function of the
         electronic noise and the exposure time"""        
@@ -256,8 +256,21 @@ class Noise():
         electronic_noise=self.dark_current*exposition_time
         
         #Create an array of n_bins*n_bins and populate them with random numbers
-        random_gauss=np.random.normal(scale=electronic_noise,size=Hist2d.shape)
+        #random_gauss=np.random.normal(scale=electronic_noise,size=Hist2d.shape)
+        random_gauss=np.random.normal(loc=electronic_noise,size=Hist2d.shape,scale=sigma)
+        #Ignore the negative ones?
+        random_gauss=abs(random_gauss)
         
+        #Update the 2d histogram with this values and return it
+        
+        return Hist2d+random_gauss
+    
+    def add_noise_abs(self,Hist2d,mean=0,sigma=5.7):
+
+        """This method adds noise to each pixel of a 2D histogram using a gaussian distribution
+        for each pixel"""        
+
+        random_gauss=np.random.normal(loc=mean,size=Hist2d.shape,scale=sigma)
         #Ignore the negative ones?
         random_gauss=abs(random_gauss)
         
@@ -273,7 +286,7 @@ class Image_2D():
         
         This object will be exported and loaded by our analysis framework"""
         
-    def __init__(self,track_list,hist_args={"bins":10}):
+    def __init__(self,track_list,hist_args={"bins":10},QE=1,GE=1,Tp=1,gain=1,ph_poiss=False):
         
         #List of tracks
         self.track_list=track_list
@@ -285,14 +298,28 @@ class Image_2D():
         #Get a list of all the true electron's positions in all tracks
         self.x_pos_true=np.ndarray.flatten(np.asarray([track_list[i].electron_positions[:,0] for i in range(len(track_list))]))
         self.y_pos_true=np.ndarray.flatten(np.asarray([track_list[i].electron_positions[:,1] for i in range(len(track_list))]))
+
+        #Define the quantum efficiency, the geometrical efficiency, the transparency and the gain
+        self.QE=QE
+        self.GE=GE
+        self.Tp=Tp
+        self.gain=gain    
     
-    
-        #Get the 2d hist and the edges from the list of tracks. Extra arguments can be passed to the
-        #2D numpy histogram function
-        self.Hist2D,self.x_edges,self.y_edges=np.histogram2d(x=self.x_pos,y=self.y_pos,**hist_args)
+        #Get the 2d hist for all the electrons and the edges from the list of tracks.
+        #Extra arguments can be passed to the 2D numpy histogram function
+        self.Hist2D_e,self.x_edges,self.y_edges=np.histogram2d(x=self.x_pos,y=self.y_pos,**hist_args)
         #Since numpy inverts the (y,x) histogram, invert it again
-        self.Hist2D=self.Hist2D.T
+        self.Hist2D_e=self.Hist2D_e.T
         
+        if ph_poiss==True:
+            #We generate in each pixel a poisson distribution with lamda=nº of electrons in that
+            #pixel
+            self.Hist2D =np.random.poisson(self.Hist2D_e*self.gain)*self.QE*self.GE*self.Tp
+            
+        else:
+            #Apply the quantum efficiency, the geometrical efficiency, the transparency and the gain to th
+            #histogram. This is the fast way of getting the number of photons for each pixel.
+            self.Hist2D = self.Hist2D_e*self.QE*self.GE*self.Tp*self.gain
     
     def track_plot(self,fig_in=None,axis_list_in=None):
         
