@@ -174,23 +174,15 @@ class Alphas_tracks:
             self.electron_positions_diff[i,0]=np.cos(self.phi)*r_pos + self.x0
             self.electron_positions_diff[i,1]=np.sin(self.phi)*r_pos + self.y0
 
-            if self.spread!=0:
-                #Now we need to draw the number from the gaussian distribution
-                r_pos_new=np.random.normal(loc=0,scale=self.spread)
-                
-                if r_pos_new>=0:
-                    #Change the positions
-                    self.electron_positions_diff[i,0]+=np.sin(self.phi)*abs(r_pos_new)
-                    
-                    self.electron_positions_diff[i,1]+=-np.cos(self.phi)*abs(r_pos_new)
-                    
-                elif r_pos_new<0:
-                    #Change the positions
-                    self.electron_positions_diff[i,0]+=-np.sin(self.phi)*abs(r_pos_new)
-                    
-                    self.electron_positions_diff[i,1]+=np.cos(self.phi)*abs(r_pos_new)
-                    
             
+            # Calculate the transverse diffusion on the x-y plane
+            if self.spread!=0:  
+                #Now we need to draw the number from the gaussian distribution
+                pos = np.random.multivariate_normal((0,0), cov=self.spread*np.identity(2),size=1)
+                
+                self.electron_positions_diff[i,0]+=pos[:,0]
+                
+                self.electron_positions_diff[i,1]+=pos[:,1]
             
             
 
@@ -225,7 +217,7 @@ class Diffusion_handler(Gas):
         
     def diffuse(self,alpha_list):
         
-        #Take an alpha track and add a difussion
+        #Take an alpha track and add a difussion in cm
         for track in alpha_list:
             track.spread= ( self.sigma_diff**2 + self.sigma_PSF )**0.5  # Desviación estándar de la Gaussiana (7.5 mm??? too much???)
     
