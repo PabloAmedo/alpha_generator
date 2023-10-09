@@ -45,7 +45,7 @@ class data_image():
         de la imagen, en caso de no querer hacerlo simplemente pie=0
         '''
 
-    def plot_data(self,RCSDA=1,Rgem=1,Rtubo=1,cal=1.):
+    def plot_data(self,RCSDA=1.,Rgem=1.,Rtubo=1.,cal=1.):                       #Params inicializados, seran leidos desde archivo
         
         '''
         Esta función es ÚNICAMENTE para plotear los datos en x
@@ -54,7 +54,7 @@ class data_image():
         # for i in range(np.shape(self.data)[0]):
         #     self.data_plot = self.data_plot + self.data[i,:]
         #-------------------------------------------------
-        self.data_to_plot_x = np.sum(self.data,axis=0)
+        self.data_to_plot_x = np.sum(self.data,axis=0)                          #Valores acumulados para cada pix en x
         #-------------------------------------------------
 
         # Centramos el eje x
@@ -91,7 +91,7 @@ class data_image():
         plt.legend(loc='best')
     
       
-    def gain(self,qeff=1,geomeff=1,T=1,E=5.5,W=26.7e-6,A=500):
+    def gain(self,qeff=1,geomeff=1,T=1,E=5.5,W=26.7e-6,A=500,reduc_fact=1, exp_time=1):
         
         '''
         Aquí obtenemos la ganancia óptica
@@ -113,14 +113,16 @@ class data_image():
             self.data = self.data/geomeff
     
         # Multiplicamos por el factor de ganancia de la cámara
-        self.data = self.data*1.32
+        self.data = self.data*1.32                                             #ESTE FACTOR E SEMPRE O MESMO ???
 
 
         self.total_photons = np.sum(self.data)
-        print('El número total de fotones es de %f' %np.sum(self.total_photons))
+        #print('El número total de fotones es de %f \t' %np.sum(self.total_photons))
 
-        self.electrons = 30*A*E/W
+        self.electrons = exp_time*reduc_fact*A*E/W
+        #print('El número total de e- primrarios es de %f \t' %np.sum(self.electrons))
+        
         self.gain = self.total_photons/self.electrons
-        print('Eficiencia fotones/e_primario: %.3f'%self.gain)
+        print('Gain: %.3f \t'%self.gain)
 
         

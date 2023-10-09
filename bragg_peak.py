@@ -12,28 +12,28 @@ import random
 
 def bragg_peak(E,alpha_range):
   
-    me=0.511     #MeV/c**2
-    M=933*4      #MeV/c**2
-    re=2.8e-13   #cm
-    NA=6.02e23   #1/mol
-    Co = 4*np.pi*NA*re**2*me
+    me=0.511                           #MeV/c**2
+    M=931.5*4                          #MeV/c**2
+    re=2.8179402894e-13                #cm
+    NA=6.022e23                        #1/mol
+    Co = 4*np.pi*NA*re**2*me           #MeV*cm2/mol (??)
     
     #-------Ar------
-    I=(210)*1e-6
-    A = 40
+    I=(210)*1e-6                       #eV                                     #xq 210?? segun NIST 188
+    A = 40                                                                     #Calculate Z/A effective factor for Ar/CF4
     Z = 18
     z = 2
-    rho=1.748*1000/(100**3)
+    rho=1.66201e-3         #1.748*1000/(100**3)                                #according NIST rho=1.66201e-3 #g/cm3
     #---------------
       
-    Sp=[]
+    Sp=[]                           
     x=[]
     r=np.linspace(alpha_range/1000,alpha_range*10,int(1e5/2.5))
          
     for i in range(len(r)-1):
         gamma=E/M+1
         beta=(1-1/(gamma**2))**0.5
-        dE_dx=rho*Co*Z/A*z**2/beta**2*(np.log(2*me/I)+np.log(beta**2/(1-beta**2)))  
+        dE_dx=rho*Co*Z/A*z**2/beta**2*(np.log(2*me/I)+np.log(beta**2/(1-beta**2))-beta**2)
         
         Sp.append(dE_dx)
         x.append((r[i+1]+r[i])/2)
@@ -83,7 +83,7 @@ def random_bragg(x,acum):
 
     return x[I]
 
-
+"""
 # TEST
 
 # x,Sp,acum=bragg_peak(5.5,5)
@@ -113,5 +113,5 @@ def random_bragg(x,acum):
 
 
 # Dio un 50% los puntos mayores a 0.8
-    
+"""
 

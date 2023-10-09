@@ -25,7 +25,7 @@ class Source:
     
     """This is the source class. It includes all the relevant information about the source"""
     
-    def __init__(self,rate=500,energy=5.5,radius=0.35,M=933,range_alpha=5.5):
+    def __init__(self,rate=500,energy=5.5,radius=0.35,M=933,range_alpha=4.8):
         
         self.rate=rate #In Hz
         
@@ -38,7 +38,7 @@ class Source:
         self.M=M
         self.z=2
     
-    def produce_alpha(self,n,store,ionization_profile,phi_in=None,ath_in=None,theta=None): 
+    def produce_alpha(self,n,store,ionization_profile,phi_in=None,ath_in=None,theta=None,n_electrons=214007): 
         """This method produces an alpha track from the alpha_tracks class"""        
         
         if ionization_profile=='Bragg':
@@ -64,7 +64,7 @@ class Source:
             x0=np.cos(theta)*self.radius*np.random.rand()
             y0=np.sin(theta)*self.radius*np.random.rand()
                  
-            alpha=Alphas_tracks(x=self.x,acum=self.acum,range_alpha=self.range_alpha,phi=phi,ath=ath,x0=x0,y0=y0,ionization_profile=ionization_profile)
+            alpha=Alphas_tracks(x=self.x,acum=self.acum,range_alpha=self.range_alpha,phi=phi,ath=ath,x0=x0,y0=y0,ionization_profile=ionization_profile,n_electrons=n_electrons)
             store.append(alpha)
             
         return store
@@ -209,7 +209,7 @@ class Diffusion_handler(Gas):
 
     """This class handles the application of diffusion from the gas. It inherits from the gass
     class"""
-    def __init__(self,sigma_diff=0.25,sigma_PSF=0.48):
+    def __init__(self,sigma_diff=0.25,sigma_PSF=0):
 
         self.u=1
         self.sigma_diff=sigma_diff
@@ -333,7 +333,7 @@ class Image_2D():
         #This is super slow if you have to do it track by track. Just skip it if there are too many
         if len(self.track_list)<100:
 
-            #Plot the tracks
+            #Plot the original tracks
             for i in range(len(self.track_list)):
                 
                 ax.plot([self.track_list[i].x0,self.track_list[i].x],[self.track_list[i].y0,self.track_list[i].y])        
@@ -345,7 +345,7 @@ class Image_2D():
             #Plot the tracks
             for i in range(len(self.track_list)):
                 
-                ax2.scatter(self.track_list[i].electron_positions[:,0],self.track_list[i].electron_positions[:,1],marker="o")
+                ax2.scatter(self.track_list[i].electron_positions[:,0],self.track_list[i].electron_positions[:,1],marker="o", color='r', zorder=3)
         
             #Restart the color cyle of the axis
             ax2.set_prop_cycle(None)
