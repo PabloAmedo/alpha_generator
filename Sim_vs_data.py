@@ -18,8 +18,8 @@ Testing Simulation and comparing results with measured data
 """
 
 
-n_tracks=5              #tracks to generate --> exposure time is obtained from here
-reduc_fact=100          #factor to reduce the number of generated e-
+n_tracks=1              #tracks to generate --> exposure time is obtained from here
+reduc_fact=1          #factor to reduce the number of generated e-
 rebin='12x12'           #rebin performed in the real image used
 scale=1.5               #scale to match real vs sim image (only with higher rebin ?????)
 
@@ -65,13 +65,13 @@ image2d.plot_x()
 #Adding some noise and SAVING image
 
 IMAGENtiff=noise.add_noise(10, image2d.Hist2D)  #default was 10
-path='C:/Users/diego/Desktop/PRACTICAS-IGFAE/AnalysisFramework/Simulation/alpha_generator/'
+path='C:/Users/diego/Desktop/PRACTICAS-IGFAE/AnalysisFramework/Simulation/alpha_generator/tiffs/'
 image=Image.fromarray(IMAGENtiff)
-image.save(path+'sim_image.tiff')
+image.save(path+'tiffs/sim_image.tiff')
 
 #Loading real image
 
-path='C:/Users/diego/Desktop/PRACTICAS-IGFAE/AnalysisFramework/Simulation/alpha_generator/'
+path='C:/Users/usuario/Desktop/PRACTICAS - IGFAE/IGFAE - GASEOUS DETECTORS/AnalysisFramework/ImageAnalysis/alpha_generator/'
 file='1-1.tiff' #'ss_single_1-1_CORTE.tif'
 datos='datos'+rebin+'.csv'                                                          # Use datos_custom to test new set ups
 datos=pd.read_csv(path+datos)

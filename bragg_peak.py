@@ -8,8 +8,9 @@ CreaEed on Wed Apr 19 11:08:56 2023
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import pandas as pd
 
-
+rho_Ar = 1.784             #g/cm3
 def bragg_peak(E,alpha_range):
   
     me=0.511                           #MeV/c**2
@@ -114,4 +115,14 @@ def random_bragg(x,acum):
 
 # Dio un 50% los puntos mayores a 0.8
 """
+NIST = pd.read_csv('C:/Users/usuario/Desktop/NIST-ASTAR.txt' ,delimiter='\t')
+x, Sp, acum = bragg_peak(5.5, 4.5)
+x_N = np.linspace(min(x), max(x), len(NIST))
+plt.figure()
+plt.title('Bragg peak', fontsize = 20)
+plt.plot(x*4.5, Sp*rho_Ar, '.', color = 'black', label = 'simulated points')
 
+plt.xlabel('length [cm]')
+plt.ylabel('stopping power [MeV $cm^{-1}$]')
+plt.grid()
+plt.legend()

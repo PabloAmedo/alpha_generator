@@ -91,7 +91,7 @@ class data_image():
         plt.legend(loc='best')
     
       
-    def gain(self,qeff=1,geomeff=1,T=1,E=5.5,W=26.7e-6,A=500,reduc_fact=1, exp_time=1):
+    def gain(self,qeff=1,geomeff=1,T=1,E=5.5,W=25.7e-6,A=500,reduc_fact=1, exp_time=1):
         
         '''
         Aquí obtenemos la ganancia óptica
@@ -119,7 +119,7 @@ class data_image():
         self.total_photons = np.sum(self.data)
         #print('El número total de fotones es de %f \t' %np.sum(self.total_photons))
 
-        self.electrons = exp_time*reduc_fact*A*E/W
+        self.electrons = exp_time*107003891.1    #reduc_fact*A*E/W
         #print('El número total de e- primrarios es de %f \t' %np.sum(self.electrons))
         
         self.gain = self.total_photons/self.electrons

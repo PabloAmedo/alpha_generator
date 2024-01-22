@@ -31,7 +31,7 @@ source=Source(radius=0.1)                                                      #
 track_list=[]
 
 #Creat some alpha tracks and set some parameters
-n_tracks=50 ;ath_angle=0
+n_tracks=1 ;ath_angle=0
 
 exposition_time=n_tracks/source.rate #In seconds
 
