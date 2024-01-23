@@ -16,6 +16,7 @@ import glob as glob
 import math as math
 import scipy.ndimage.filters as filters
 from bragg_peak import*
+from Clusters_calculation import*
 
 
 
@@ -96,169 +97,6 @@ class Source:
 
 
 
-"""
------------------------------------- IDEA ------------------------------------
-    
-Change the muon_generator class for muon_ionization which will calculate some 
-ionization parameters such as <n_e,cl>, n_max, W_max being,
-
-    <n_e,cl>: average number of e- generated per cluster
-    n_max   : max number of e- that could be generated in a cluster (?)
-    *** Here it was a max E transfered to delta (no needed now) ***
-    
-this parameters will be used to compute the e- distribution across the track.
-
-This class will need the muon energy as input, (dEdx is calculated from E)
-and gas info: BB data curve (NIST), experimental cl/len points (Riegler)
-* Methods: ionization
-* Return: 'proportional' factor with BB curve and the average number of cl/len
-
-
-Now we can use the previous results to define the track with its ionization. 
-We define the muon_generator class here which will generate 'n' muon tracks 
-with the corresponding number of ionization clusters + e-. Tracks are generated 
-randomly in a choosen rectanglar volume. We make the next assumptions:
-    -We are considering that muon flux is coming from one lateral only.
-    -We are only considering muons that go throught the entire region.
-    -Not considering muons generated inside due to interactions.
-    -Not considering muons stopping in the chamber region.
-    -Muons do not loss energy
-
-* Return: number of clusters per cm and number of e- per cluster
-"""
-
-class muon_ionization:
-    
-    """
-    Change the muon_generator class for muon_ionization which will calculate some 
-    ionization parameters such as <n_e,cl>, n_max, W_max being,
-        <n_e,cl>: average number of e- generated per cluster
-        n_max   : max number of e- that could be generated in a cluster (?)
-    this parameters will be used for compute the e- distribution across the track.
-
-    This class will need the muon energy as input, (dEdx is calculated from E)
-    and gas info: BB data curve (NIST), experimental cl/len points (Riegler)
-    * Methods: ionization (and that's it') , geometry (???)
-    * Return: 'proportional' factor with BB curve and the average number of cl/len
-    
-    
-    *** All the references are in Riegler's book."""
-    
-    
-    def __init__(self, E = 5000):
-        
-        self.E = E
-        
-    def ionization(self, gas = 'Argon', exp_data = 'Argon'):
-        
-        """
-        This method will assume a proportional relationship between the 
-        Bethe-Bloch curve and the ionization clusters/len WHICH IS NOT ALWAYS 
-        TRUE but it is enough for our analyssis. 
-        This calculates the relation using the NIST-ESTAR data for a given gas 
-        and exoerimental data from [ERM 69].
-        
-        Inputs:
-            gas : medium to be ionized. Default = Argon.
-            exp_data : measured cl/len data. Default = Argon.
-            
-        Output:
-            dEdx : energy lost per unit length 
-            cl_len_avg: avg number of cluster per unit length
-            
-            we also show (print) the proportional factor
-        """
-        
-        #Data input and format
-        folder_NIST = 'NIST data'
-        folder_exp = 'Riegler data'
-        NISTdata = pd.read_csv(folder_NIST+'/' + gas + '_Sp.txt',
-                               delimiter='\t', header=4)
-        expdata = pd.read_csv(folder_exp+'/' + exp_data + '_cl_len.txt',
-                              delimiter=',')
-        
-        NISTdata.rename(columns={'MeV      ':'Energy [MeV]',
-                                 'MeV cm2/g':'dE/dx [MeV cm2/g]'},
-                        inplace=True)
-        NISTdata=NISTdata.drop(columns={'Unnamed: 2'})
-        
-        expdata.rename(columns={'cl_cm':'cl/cm',
-                                 's(cl_cm)':'s(cl/cm)',
-                                 'gamma':'gamma'},
-                        inplace=True)
-        expdata['Energy [MeV]'] = 0.511 * (expdata['gamma'] - 1)
-        
-        E1_a=NISTdata.loc[NISTdata['Energy [MeV]']<expdata['Energy [MeV]'][0]].index[-1]
-        E1_b=(NISTdata.loc[NISTdata['Energy [MeV]']>expdata['Energy [MeV]'][0]]).index[0]
-
-        E2_a=NISTdata.loc[NISTdata['Energy [MeV]']<expdata['Energy [MeV]'][1]].index[-1]
-        E2_b=(NISTdata.loc[NISTdata['Energy [MeV]']>expdata['Energy [MeV]'][1]]).index[0]
-
-        #Linear fit through it
-        def linear(x,a,b):
-            return a*x+b
-
-        xdata = [NISTdata.loc[E1_a]['Energy [MeV]'], NISTdata.loc[E1_b]['Energy [MeV]']]#, NISTdata.loc[E2_a]['Energy [MeV]']]
-        ydata = [NISTdata.loc[E1_a]['dE/dx [MeV cm2/g]'], NISTdata.loc[E1_b]['dE/dx [MeV cm2/g]']]#, NISTdata.loc[E2_a]['dE/dx [MeV cm2/g]']]
-        fit,_ = opt.curve_fit(linear, xdata, ydata)
-
-        #Calculate dE/dx for data points energy
-        dEdx_fit = linear(expdata['Energy [MeV]'],*fit)
-        
-        """
-        FIXME
-        
-        I can try to do this more general, avaliable for more gases or more 
-        data since only 2 points are used now (the only data avaliable...)
-        I had this idea below which is not working but I can fix in a future!!!
-        
-        
-        
-        #Localization and fit to extrapolate energy range
-        #Linear fit through the given data
-        def linear(x,a,b):
-            return a * x + b
-        
-        E_a = [] ; E_b = []
-        for i in range(len(NISTdata)):
-            E_a.append(NISTdata.loc[NISTdata['Energy [MeV]'] < expdata['Energy [MeV]'][i]].index[-1])
-            E_b.append(NISTdata.loc[NISTdata['Energy [MeV]'] > expdata['Energy [MeV]'][i]].index[0])
-        for i in range(len(expdata)):
-            data = [NISTdata.loc[E_a[i]]['Energy [MeV]'], NISTdata.loc[E_b[i]]['Energy [MeV]']]
-        
-        
-        fit_params, _ = opt.curve_fit(linear, xdata, ydata)
-        dEdx_fit=linear(expdata['Energy [MeV]'],*fit_params)
-        prop_factor = exp_data['cl/cm'] / dEdx_fit
-        """
-        W=expdata['cl/cm']/dEdx_fit
-        prop_factor=np.mean(W)
-        
-        #Now I am going to calculate the avg number of cl per len
-        
-        """
-        FIXME
-
-        I can make here a try-except where if the E is in the range of NIST data we do 
-        the same as before, and if it is not we can extrapolate as a linear regression. 
-        I mean, it won't be too much larger than a few GeV... it should work
-        """
-        
-
-        #This energy is higher than the data used from NIST, so I am just extrapolating
-        #extrapolate to linear y=mx+n
-        m_extr=(NISTdata['dE/dx [MeV cm2/g]'][80]-NISTdata['dE/dx [MeV cm2/g]'][78])/(NISTdata['Energy [MeV]'][80]-NISTdata['Energy [MeV]'][78])
-        n_extr=NISTdata['dE/dx [MeV cm2/g]'][80]-m_extr*NISTdata['Energy [MeV]'][80]
-
-        cl_len_avg = (m_extr*self.E+n_extr)*prop_factor
-        dEdx = m_extr*self.E+n_extr
-       
-        print('\nFor a muon with {} MeV:\t'.format(self.E), prop_factor)
-        
-        
-        
-        return dEdx, cl_len_avg
-
 class muon_generator:
     
     """
@@ -272,7 +110,7 @@ class muon_generator:
         -Muons do not loss energy
     """
     
-    def __init__(self, energy=5e3, dEdx=2.061, geometry = [1,1,1], n_cl_cm = 57.311):    # Valores preliminares 
+    def __init__(self, energy=5e3,  geometry = [1,1,1]):    # Valores preliminares 
         """
         We set the general values for every muon we would like to generate.
         (This can be edited by calling the class with speciffic info about the params)
@@ -283,16 +121,17 @@ class muon_generator:
         Sources for the used data:
         
         energy      -->         4 GeV according to (https://pdg.lbl.gov/2019/reviews/rpp2019-rev-cosmic-rays.pdf) preliminar value
-        dEdx        -->         2.061 MeV·cm2/g according to (https://pdg.lbl.gov/2017/AtomicNuclearProperties/MUE/muE_argon_gas_Ar.pdf)
+        *dEdx        -->         2.061 MeV·cm2/g according to (https://pdg.lbl.gov/2017/AtomicNuclearProperties/MUE/muE_argon_gas_Ar.pdf)
                                 (parametrizar como una recta dp del material y energia ???????)
         geometry    -->         chamber dimensions (maybe this fits better in other class)
-        n_cl_cm     -->         based on muon_ionization results
+        *n_cl_cm     -->         based on muon_ionization results
+        
+        
+        *We are calculating them directly in the next step as they depend on the energy.
         """
         
         self.energy = energy  #GeV
-        self.dEdx = dEdx      #MeV*cm2/g
         self.xmax, self.ymax, self.zmax = geometry
-        self.n_cl_cm = n_cl_cm
         
         
         
@@ -332,6 +171,9 @@ class muon_generator:
         
         """
         
+        
+        dEdx, n_cl_cm = clusters_cm(Emuon = self.energy, Wi = 26.4e-6, gas = 'Argon', exp_data= 'Argon' )
+        
         track_len=[]    
         for i in range(n):
             #Generate the initial positions
@@ -347,7 +189,7 @@ class muon_generator:
             previosly obtained.
             
             
-                    Z
+                    X
             -------------------
             |                 |
             |                 | Y
@@ -360,31 +202,31 @@ class muon_generator:
             
             if theta0 > np.pi/2:
                 alpha = np.pi - np.pi/2 - (np.pi-theta0)
-                z =  y0 / np.tan(alpha)
+                x =  y0 / np.tan(alpha)
                 
             if theta0 <= np.pi/2:
                 alpha = np.pi - np.pi/2 - theta0
-                z = (self.ymax - y0) / np.tan(alpha)
+                x = (self.ymax - y0) / np.tan(alpha)
                 
             #I should add condition about theta0 here too
-            if z <= self.zmax and theta0 <= np.pi/2:
+            if x <= self.xmax and theta0 <= np.pi/2:
                 yout = self.ymax
-                zout = z
-            elif z <= self.zmax and theta0 > np.pi/2:
+                xout = x
+            elif x <= self.xmax and theta0 > np.pi/2:
                 yout = 0
-                zout = z
-            elif z > self.zmax and theta0 <= np.pi/2:
-                yout = self.zmax * np.tan(alpha)
-                zout = self.zmax
-            elif z > self.zmax and theta0 > np.pi/2:
+                xout = x
+            elif x > self.xmax and theta0 <= np.pi/2:
+                yout = self.xmax * np.tan(alpha)
+                xout = self.xmax
+            elif x > self.xmax and theta0 > np.pi/2:
                 alpha = theta0 - np.pi / 2
-                yout = self.zmax * np.tan(alpha)
-                zout = self.zmax
+                yout = self.xmax * np.tan(alpha)
+                xout = self.xmax
             
-            tr_len = np.sqrt(zout**2 + (yout-y0)**2)
+            tr_len = np.sqrt(xout**2 + (yout-y0)**2)
             #Calculate number of electrons generated
             #Calculate the avg n of clusters for the track
-            n_cl_avg = np.random.poisson(lam = tr_len * self.n_cl_cm)          #Poisson distr centered in the n_cl_len obtained from muon_ionization
+            n_cl_avg = np.random.poisson(lam = tr_len * n_cl_cm)          #Poisson distr centered in the n_cl_len obtained from muon_ionization
             
             #Define the 1/n^2 distribution
             def distr_1n2(n):
@@ -416,16 +258,16 @@ class muon_generator:
             This is just true for the 2D case, change for more generality
             """
             
-            x0 = tr_len * np.sin(theta0) * np.cos(phi0)
+            z0 = tr_len * np.sin(theta0) * np.cos(phi0)
             y0 = y0
-            z0 = 0
+            x0 = 0
             
-            x = x0
+            z = z0
             y = yout
-            z =zout
+            x =xout
             
             #Uniform distribution of the clusters along the track
-            cl_position = np.random.uniform(low = 0, high = zout, size = len(n_e_cl))
+            cl_position = np.random.uniform(low = 0, high = xout, size = len(n_e_cl))
             cl_position = np.sort(cl_position)
             
             
@@ -445,16 +287,25 @@ class muon_tracks(muon_generator):
                                n_cl, n_e, ...)
     """
     
-    def __init__(self, energy, track_length, initial_position, final_position, clusters, n_e_cl, geometry = [1,1,1]):
+    def __init__(self, energy, track_length, initial_position, final_position, clusters, n_e_cl, geometry = [1,1,1], spread = 0):
         
         self.energy = energy
         self.track_length = track_length
         self.x0, self.y0, self.z0 = initial_position
         self.x, self.y, self.z = final_position
-        self.clusters = clusters
+        self.clusters = clusters    #z coord of each cluster
         self.n_e_cl = n_e_cl
         self.n_electrons = np.sum(n_e_cl)
         self.xmax, self.ymax, self.zmax = geometry
+        
+        #This is defined at 2 sigma and will be handled by the Difussion_handler class
+        self.spread=spread
+        
+        #Storage of electrons (z,y) positions
+        self.electron_positions=np.zeros([self.n_electrons,2]) # coordenadas [x,y] para los 50 electrones
+        
+        #Storage of electrons (z,y) positions after diffusion
+        self.electron_positions_diff=np.zeros([self.n_electrons,2])
         
     def fill(self):
         """
@@ -463,66 +314,64 @@ class muon_tracks(muon_generator):
         """
         
         #Calculate the slope (assuming 2D trakcs)
-        slope = (self.y-self.y0) / (self.z-self.z0)
+        #y(x) = m * x + n
+        slope = (self.y-self.y0) / (self.x-self.x0)
         
-        def lineal_track(z):
-            return slope * z + self.y0
+        def lineal_track(x):
+            return slope * x + self.y0
         
         cl_y_tr = []                  #List to store y coord of cl around track 
-        cl_z_tr = []                  #List to store z coord of cl around track
-# =============================================================================
-#         for i in range(len(self.clusters)):
-#             cl_y_pos = lineal_track(self.clusters[i])
-#             if cl_y_pos <= self.ymax and cl_y_pos >= 0:
-#                 cl_y_tr.append(cl_y_pos)
-#                 cl_z_tr.append(self.clusters[i])
-# =============================================================================
-        cl_track = lineal_track(self.clusters)
+        cl_x_tr = []                  #List to store x coord of cl around track
+
+        for i in range(len(self.clusters)):
+            cl_y_pos = lineal_track(self.clusters[i])
+            if cl_y_pos <= self.ymax and cl_y_pos >= 0:
+                cl_y_tr.append(cl_y_pos)
+                cl_x_tr.append(self.clusters[i])
         
-        plt.plot(self.clusters, cl_track, 'o')
-        plt.title('Clusters along muon track')
-        plt.xlabel('z')
-        plt.ylabel('y')
-        
-        """
-        FIXME
-        
-        Probably the next could be improved. I use a lot of loops because I got 
-        lost somewhere.
-        """
-        zs=[]
-        ys=[]
-        z_pos = []
-        y_pos = []
-        #Generate the calculated n of e- around the cluster position
-        #zs and ys correspond to the z and y coordinates
-        for i in range(len(self.n_e_cl)):
-            z_aux = np.random.normal(loc = self.clusters[i], scale=0.15, size= self.n_e_cl[i])
-            for e in z_aux:
-                if e <= self.zmax:
-                    zs.append(e)
+        #Assign positions to e in cluster
+        aux_electrons_total = 0
+        for i in range(len(self.clusters)):
+            for j in range(self.n_e_cl[i]):
+                #Change the positions
+                self.electron_positions[aux_electrons_total,0] = cl_x_tr[i]
+                self.electron_positions[aux_electrons_total,1] = cl_y_tr[i]
+                #Change the positions
+                self.electron_positions_diff[aux_electrons_total,0] = cl_x_tr[i]
+                self.electron_positions_diff[aux_electrons_total,1] = cl_y_tr[i]
                 
-        for i in range(len(zs)):
-            y_aux = np.random.normal(loc= lineal_track(zs[i]), scale=0.15)
-            ys.append(lineal_track(y_aux))
         
-
-        for i in range(len(zs)):
-            if ys[i]<= self.ymax and ys[i]>=0:
-                 z_pos.append(zs[i])
-                 y_pos.append(ys[i])
-                 
-        return z_pos, y_pos
-# =============================================================================
-        #Changing zs and ys format to be useful
-
-        #zs =  [list(map(float, subarray)) for subarray in zs]
-        #zs = [item for sublist in zs for item in sublist]
-        #ys =  [list(map(float, subarray)) for subarray in ys]
-        #ys = [item for sublist in ys for item in sublist]
-# =============================================================================
+                # Calculate the transverse diffusion on the z-y plane
+                if self.spread!= 0:
+                    #Now we need to draw the number from the gaussian distribution
+                    pos = np.random.multivariate_normal((0,0), cov=self.spread*np.identity(2),size=1)
+                    
+                    self.electron_positions_diff[aux_electrons_total,0]+=pos[:,0]
+                    
+                    self.electron_positions_diff[aux_electrons_total,1]+=pos[:,1]
+                    
+                aux_electrons_total = aux_electrons_total + 1
         
-       # return zs, ys
+        return cl_x_tr, cl_y_tr
+    
+    def select(self,variable_scan="x",min_var=0,max_var=100,array_to_store=None):
+        """This method scans the positions of the electrons either in the x or y direction and
+        it selects them based on a condition on the other variable. Ex: we scan in x and select
+        electrons whose y position fulfills y_min<y<y_max"""
+        
+        #Select the apropiate index, the opossite of variable_scan
+        if variable_scan=="x":
+            index=1;other_index=0
+        else:
+            index=0;other_index=1
+            
+        #Iterate over the electrons
+        for j in range(self.n_electrons):
+            #Check if they are whitin our current 
+            if min_var<self.electron_positions_diff[j,index]<=max_var:
+                array_to_store.append(self.electron_positions_diff[j,other_index])
+                
+        return array_to_store
     
         
 class Alphas_tracks(Source):
@@ -661,9 +510,9 @@ class Diffusion_handler(Gas):
     class"""
     def __init__(self,sigma_diff=0.25,sigma_PSF=0):
         
-        self.u=1
-        self.sigma_diff=sigma_diff
-        self.sigma_PSF=sigma_PSF
+        self.u = 1
+        self.sigma_diff = sigma_diff
+        self.sigma_PSF = sigma_PSF
         
     def diffuse(self,alpha_list):
         
@@ -738,12 +587,21 @@ class Image_2D():
         self.track_list=track_list
         
         #Get a list of all electron positions in all tracks
-        self.x_pos=np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,0] for i in range(len(track_list))]))
-        self.y_pos=np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,1] for i in range(len(track_list))]))
+        #self.x_pos = np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,0] for i in range(len(track_list))]))
+        #self.y_pos = np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,1] for i in range(len(track_list))]))
+        
+        self.x_pos = np.concatenate([track_list[i].electron_positions_diff[:,0] for i in range(len(track_list))])
+        self.y_pos = np.concatenate([track_list[i].electron_positions_diff[:,1] for i in range(len(track_list))])
+        
         
         #Get a list of all the true electron's positions in all tracks
-        self.x_pos_true=np.ndarray.flatten(np.asarray([track_list[i].electron_positions[:,0] for i in range(len(track_list))]))
-        self.y_pos_true=np.ndarray.flatten(np.asarray([track_list[i].electron_positions[:,1] for i in range(len(track_list))]))
+        #self.x_pos_true=np.ndarray.flatten(np.asarray([track_list[i].electron_positions[:,0] for i in range(len(track_list))]))
+        #self.y_pos_true=np.ndarray.flatten(np.asarray([track_list[i].electron_positions[:,1] for i in range(len(track_list))]))
+        
+        self.x_pos_true = np.concatenate([track_list[i].electron_positions[:,0] for i in range(len(track_list))])
+        self.y_pos_true = np.concatenate([track_list[i].electron_positions[:,1] for i in range(len(track_list))])
+        
+        
         
         #Define the quantum efficiency, the geometrical efficiency, the transparency and the gain
         self.QE=QE

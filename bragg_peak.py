@@ -115,6 +115,10 @@ def random_bragg(x,acum):
 
 # Dio un 50% los puntos mayores a 0.8
 """
+
+"""
+#EXAMPLE
+
 NIST = pd.read_csv('C:/Users/usuario/Desktop/NIST-ASTAR.txt' ,delimiter='\t')
 x, Sp, acum = bragg_peak(5.5, 4.5)
 x_N = np.linspace(min(x), max(x), len(NIST))
@@ -126,3 +130,4 @@ plt.xlabel('length [cm]')
 plt.ylabel('stopping power [MeV $cm^{-1}$]')
 plt.grid()
 plt.legend()
+"""
