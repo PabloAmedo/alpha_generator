@@ -135,7 +135,7 @@ class muon_generator:
         
         
         
-    def produce_muon(self,n, store, y0_in=None, phi0_in=None, theta0_in=None, e_cut = 125):
+    def produce_muon(self,n, store, y0_in=None, phi0_in=None, theta0_in=None, e_cut = 126, gas = 'Argon', line = False):
         
         """
         This method is used for generate n muon tracks by randomly generate a 
@@ -170,15 +170,29 @@ class muon_generator:
                                       n_cl, more?)
         
         """
-        
-        
-        dEdx, n_cl_cm = clusters_cm(Emuon = self.energy, Wi = 26.4e-6, gas = 'Argon', exp_data= 'Argon' )
+        if gas == 'Argon':
+            gammas = np.array([4.0,3.5])
+            cl_meas = np.array([27.8,28.6])
+            Wi = 26.4e-6
+            
+        elif gas == 'Xenon':
+            gammas = np.array((4.0))
+            cl_meas = np.array((44))
+            Wi = 21.7e-6
+        dEdx, n_cl_cm = clusters_cm(Emuon = self.energy, Wi = Wi, gas = gas, gammas=gammas, cl_measurements = cl_meas )
         
         track_len=[]    
         for i in range(n):
             #Generate the initial positions
+            #FIXME
+            #CHANGING THINGS TO CALCULATE THE RESOLUTION (SAME LEN)
             y0 = np.random.rand() * self.ymax
             theta0 = np.random.rand() * np.pi
+# =============================================================================
+            if line == True:
+                y0 = self.ymax / 2
+                theta0 = np.pi / 2.1
+# =============================================================================
             #phi0 = np.random.rand() * 2 * np.pi 
             phi0 = 0                    #just for testing (simple case)
             """
@@ -297,6 +311,13 @@ class muon_tracks(muon_generator):
         self.n_e_cl = n_e_cl
         self.n_electrons = np.sum(n_e_cl)
         self.xmax, self.ymax, self.zmax = geometry
+        
+        if self.y > self.y0:
+            self.phi = np.arctan(abs(self.y-self.y0) / (self.x-self.x0))
+        elif self.y == self.y0:
+            self.phi = np.pi / 2
+        else:
+            self.phi = np.pi / 2 + np.arctan(abs(self.y-self.y0) / (self.x-self.x0))
         
         #This is defined at 2 sigma and will be handled by the Difussion_handler class
         self.spread=spread
@@ -626,7 +647,7 @@ class Image_2D():
             self.Hist2D = self.Hist2D_e*self.QE*self.GE*self.Tp*self.gain
     
     def track_plot(self,fig_in=None,axis_list_in=None):
-        
+        #This does the first plot (true tracks + electrons positions)
         """This plots the generated tracks in a 2D image. It's advisable not to do it if the number
         of tracks is too high because it will take time"""
         

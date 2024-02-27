@@ -17,7 +17,7 @@ Just consult the parameters that you have to change and edit them in the example
 
 -The .csv files are files with stored data that it's being called by the scripts. Mostly they contain info about the camara that has been used to take the data (datos.csv), so if you want to change that info you can rewrite the file with the desire info.
 
-	cal_hole,cal_radius,cal_fab ---> those are the ones who require a review !!!!!
+	cal_hole,cal_radius,cal_fab ---> those are the ones which needs a review !!!!!
 
 -The .tiff files are the images taken with the camera so they are the 'real' data to compare/analyze. You will need to specify the path + file in your script (by default it is called in the example_optical_gain.py file). 
 

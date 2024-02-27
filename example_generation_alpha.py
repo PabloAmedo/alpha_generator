@@ -10,7 +10,7 @@ from Alpha_track_simulator import*
 
 
 # This is an example of how to generate alpha tracks using this generator
-
+print('Running...')
 # Create an argon object from the gas class
 argon=Gas(1,1,1,1,1)
 

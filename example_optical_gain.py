@@ -15,7 +15,7 @@ from optical_gain import*
 
 This code is not updated but it is the original for the sim_vs_data comparison 
 
-Saved to doucle check results (?)
+Saved to double check results (?)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 """
 

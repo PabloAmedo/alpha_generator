@@ -119,7 +119,7 @@ class data_image():
         self.total_photons = np.sum(self.data)
         #print('El número total de fotones es de %f \t' %np.sum(self.total_photons))
 
-        self.electrons = exp_time*107003891.1    #reduc_fact*A*E/W
+        self.electrons = exp_time * reduc_fact * A * E / W
         #print('El número total de e- primrarios es de %f \t' %np.sum(self.electrons))
         
         self.gain = self.total_photons/self.electrons
