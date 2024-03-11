@@ -19,8 +19,6 @@ from bragg_peak import*
 from Clusters_calculation import*
 
 
-
-
 #Lets define the classes
 class Source:
     
@@ -135,7 +133,7 @@ class muon_generator:
         
         
         
-    def produce_muon(self,n, store, y0_in=None, phi0_in=None, theta0_in=None, e_cut = 126, gas = 'Argon', line = False):
+    def produce_muon(self,n, store, y0_in=None, phi0_in=None, theta0_in=None, e_cut = 205, gas = 'Argon', line = False):#FIXME: I've set the 104 max e cut off based on Arogancia09 paper. My calculations said 125 (kinda the same)
         
         """
         This method is used for generate n muon tracks by randomly generate a 
@@ -180,8 +178,9 @@ class muon_generator:
             cl_meas = np.array((44))
             Wi = 21.7e-6
         dEdx, n_cl_cm = clusters_cm(Emuon = self.energy, Wi = Wi, gas = gas, gammas=gammas, cl_measurements = cl_meas )
+        n_cl_cm = 34.8 #FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        track_len=[]  
         
-        track_len=[]    
         for i in range(n):
             #Generate the initial positions
             #FIXME
@@ -191,7 +190,7 @@ class muon_generator:
 # =============================================================================
             if line == True:
                 y0 = self.ymax / 2
-                theta0 = np.pi / 2.1
+                #theta = np.pi/2
 # =============================================================================
             #phi0 = np.random.rand() * 2 * np.pi 
             phi0 = 0                    #just for testing (simple case)
@@ -237,20 +236,24 @@ class muon_generator:
                 yout = self.xmax * np.tan(alpha)
                 xout = self.xmax
             
+            if line == True:
+                yout = y0
+                xout = self.xmax
             tr_len = np.sqrt(xout**2 + (yout-y0)**2)
             #Calculate number of electrons generated
             #Calculate the avg n of clusters for the track
             n_cl_avg = np.random.poisson(lam = tr_len * n_cl_cm)          #Poisson distr centered in the n_cl_len obtained from muon_ionization
             
+                
             #Define the 1/n^2 distribution
             def distr_1n2(n):
                 """
-                exp_prob = np.array([65.6,15.0,6.4,3.5,2.25,1.55,1.05,0.81,0.61,0.49,0.39,0.3,
-                                 0.25,0.2,0.16,0.12,0.095,0.075,0.063]) / 100
+                exp_prob = np.array([65.6, 15.0, 6.4, 3.5, 2.25, 1.55, 1.05, 0.81, 0.61, 0.49, 0.39, 0.3,
+                                 0.25, 0.2, 0.16, 0.12, 0.095, 0.075, 0.063]) / 100
                 if n < 19:
                     return exp_prob[n]
                 if n >= 19:
-                    return 1/n**2"""
+                    return 21.6/n**2"""
                 return 1/n**2
 
             n_e_cl=[]                   #number of e- generated in each cluster

@@ -8,17 +8,17 @@ Created on Wed Jan 24 09:49:57 2024
 from Alpha_track_simulator import *
 import numpy as np
 import matplotlib.pyplot as plt
+from Clusters_calculation import*
 
 plt.close('all')
 
 #INPUTS
 gas1 = 'Argon'
-n_tracks = 10000
-Emuon = 2285                                                                   #(MeV) (CR)
+n_tracks = 1000
+Emuon = 5000                                                                   #(MeV) (CR)
 dimension = [1.4,1.4,1.4]                                                      #Dimension of the chamber
-bins = 64                                                                      #bins for the histogram
 muon_mass = 105.65837                                                          #(MeV/c2)
-rho_Ar = 1.784                                                                 #(kg/m3)
+rho_Ar = 1.784e-3                                                              #(g/cm3)
 lines = True                                                                   #True => straight tracks ; False => random tracks
 
 #LOAD DATA (Allison & Cobb paper and electron distribution per cluster)
@@ -36,7 +36,7 @@ def Resolution_xP(x, n = 1 , P = 1):
 def E_over_I(beta, xP, nu=18, I=188):
     return (6.83*nu*xP)/(I*beta**2)
 
-def FWHM(histogram, bins):
+def FWHM(hval, hbins):
     # Encuentra la posición del valor máximo del histograma
     max_index = np.argmax(hval)
     max_value = hval[max_index]
@@ -84,6 +84,9 @@ tr_len = np.mean(tr_len)
 total_e = np.mean(e_track_acum)
 n_clusters = np.mean(clusters)
 
+#Computing experimental data
+E_loss_data, N_cl_data = clusters_cm(Emuon = Emuon)
+N_cl_data = 35
 # SOME NUMERICAL VALUES =======================================================
 print('\n')
 print('='*24,'INPUTS','='*24)
@@ -91,7 +94,7 @@ print('• Energy:\t\t {}\t\t(MeV)'.format(Emuon))
 print('• Momentum:\t\t {:.2f}\t(MeV/c)'.format(np.sqrt(Emuon**2 - muon_mass**2) ))
 print('• N tracks:\t\t {}'.format(n_tracks))
 print('• Track length:\t {:.2f}\t\t(cm)'.format(muons[0].track_length))
-print('• Rho Ar:\t\t {}\t(g/cm3)'.format( rho_Ar*1e-3))
+print('• Rho Ar:\t\t {}\t(g/cm3)'.format( rho_Ar))
 print('\n')
 
 print('='*15,'RESULTS FROM SIMULATION','='*15)
@@ -101,58 +104,18 @@ print('• <e-/cm>:\t\t {:.2f}'.format(total_e / tr_len))
 print('• <e-/cl>:\t\t {:.2f}'.format(total_e / n_clusters))
 print('• <cl/cm>:\t\t {:.2f}'.format(n_clusters / tr_len))
 print('• Max e-:\t\t {:.2f}'.format( max(e_acum)))
-print('• <dE/dx> sim:\t {:.6f}\t(keV/cm)'.format(np.mean(E_loss_cm)))
+print('• <dE/dx> sim:\t {:.3f}\t(keV·cm2/g)'.format(np.mean(E_loss_cm) / rho_Ar))
 print('\n')
 
 print('='*18,'VALUES FROM DATA','='*18)
 print(' '*15,'Data for 3GeV/c pions (-)',' '*15)
-print('• FWHM:\t\t\t {:.2f}\t\t(keV)'.format(2.1))
-print('• Peak:\t\t\t {:.2f}\t\t(keV)\t !!!'.format(2.2))
-print('• <e-/cm>:\t\t {:.2f}'.format(3.3 * 51.48))
+print('• FWHM:\t\t\t {:.2f}\t\t(keV)'.format(2.1))                             #From Harris 1972
+print('• Peak:\t\t\t {:.2f}\t\t(keV)\t !!!'.format(2.2))                       #From Harris 1972
+print('• <e-/cm>:\t\t {:.2f}'.format(3.3 * N_cl_data))
 print('• <e-/cl>:\t\t {:.2f}'.format(3.3))                                     #Value from calculations using: e_in_clusters_TEST.py
-print('• <cl/cm>:\t\t {:.2f}'.format(51.48))
-print('• Max e-:\t\t {:.2f}'.format( 125.0))
-print('• <dE/dx> NIST:\t {}\t(keV/cm)'.format(2.452 * rho_Ar))
+print('• <cl/cm>:\t\t {:.2f}'.format(N_cl_data))
+print('• Max e-:\t\t {:.2f}'.format( 104.0))
+print('• <dE/dx> NIST:\t {}\t\t(MeV·cm2/g)'.format(E_loss_data))
 
 ###############################################################################
 ###############################################################################
-###############################################################################
-
-# =============================================================================
-# The following commented lines are part of other .py files but they can be used 
-# here too if you want to check this results as well.
-# =============================================================================
-
-
-#PLOT THE HISTOGRAMS (Landau-wise)=============================================
-"""
-plt.figure()        #This will show a plot for every dimension we have -------> Must be commented
-hval, hbins,_ = plt.hist(E_loss_cm, bins = bins)
-#x_AC_data = np.linspace(min(hbins), max(hbins), len(ACdata))
-x_AC_data = np.linspace(0, 10, len(ACdata)) + (min(hbins))                     #Shifted to match simulated rise
-plt.plot(x_AC_data, ACdata/(max(ACdata)/max(hval)), 'o', color = 'r', label = 'exp data [A&C]')
-plt.xlabel('dE / dx (keV / cm)')
-plt.ylabel('Counts')
-plt.title('Track legth: {:.2f} in {}'.format(muon.track_length, gas1))
-"""
-#PLOT ENERGY DISTRIBUTION RESOLUTION===========================================
-"""
-#This comes from Ionization_resolution.py, we don't care about it now
-
-widths_norm_Ar = widths_Ar / widths_Ar[norm_index]
-E_I_Ar = E_over_I(beta = beta, xP = tr_len)
-
-#Show the Figure (ENERGY DISTRIBUTION RESOLUTION (?) )=========================
-plt.figure()
-plt.plot(E_I_Ar, widths_norm_Ar *100 , 'o', color = 'g', label = 'Ar')
-#plt.plot(E_I_Xe, widths_norm_Xe *100 , 'x', color = 'r', label = 'Xe')        #Xenon related
-plt.plot(E_I_Ar, Resolution_xP(x = E_I_Ar) , '-', color = 'b')
-plt.xscale('log')
-plt.yscale('log')
-plt.xlabel('Detector length (E/I adim)')
-plt.ylabel('FWHM (%)')
-plt.title('Ionization resolution. (tracks={})'.format(n_tracks))
-plt.ylim([1,250])
-plt.grid()
-plt.legend(loc = 'lower left')
-"""

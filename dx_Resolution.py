@@ -17,7 +17,7 @@ plt.close('all')
 n_tracks = 1
 Emuon = 4000                    #(MeV) // assuming CR as source
 muons = []                      #list to store muon objects
-dimension = ([5,5,5])           #[x,y,z] (cm) of a rectangular-wise chamber
+dimension = ([500,500,500])           #[x,y,z] (cm) of a rectangular-wise chamber
 sigma_diff = 0.015
 sigma_PSF = 0
 pxs = 100
@@ -45,7 +45,7 @@ noise=Noise()
  
 
 bins_x = int(muons[0].x * (1 / px_size))
-bins_y = int(abs(muons[0].y - muons[0].y0) * (1 / px_size))
+bins_y = 100#int(5 * (1 / px_size))#int(muons[0].y  * (1 / px_size))
 
 #Plot the final tracks
 image2d=Image_2D(track_list = muons, hist_args={"bins":[bins_x, bins_y]})
@@ -102,6 +102,7 @@ start_y = int(muons[0].y0 * px_size)
 # Insertar la imagen en la matriz de ceros de 100x100
 full_px_array[start_y:start_y + len(probab_centroid), start_x:start_x + len(probab_centroid[0])] = probab_centroid
 """
+"""
 muon1 = muons[0]
 if muon1.phi <= np.pi / 2:
     start_x = int(muons[0].x0 * (1/px_size))
@@ -115,11 +116,11 @@ else:
     # Insertar la imagen en la matriz de ceros de 100x100
     full_px_array[start_y:start_y + len(probab_centroid), start_x:start_x + len(probab_centroid[0])] = probab_centroid
 
-
+"""
 
 plt.figure()
 plt.imshow(full_px_array, cmap='viridis')
-plt.plot(ML_position, (50 + max(linear_fit(ML_position, *fit_opt))) - linear_fit(ML_position, *fit_opt), color = 'r')
+#plt.plot(ML_position, (50 + max(linear_fit(ML_position, *fit_opt))) - linear_fit(ML_position, *fit_opt), color = 'r')
 plt.colorbar()
 plt.show()
 

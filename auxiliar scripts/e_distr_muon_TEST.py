@@ -12,8 +12,8 @@ import numpy as np
 W_i = 26.4                    #eV
 rho_Ar = 1.784e-3             #g/cm3
 #next quantities taken from Clusters_calculation.py
-dEdx_4GeV = 2.697             #MeV cm2/g
-Ncl_4GeV = 55.16              #clusters/cm
+dEdx_4GeV = 2.496             #MeV cm2/g
+Ncl_4GeV = 35              #clusters/cm
 
 n_prom = ( ( dEdx_4GeV ) * rho_Ar ) / ( Ncl_4GeV * W_i * (1e-6) )
 
@@ -22,7 +22,7 @@ print('<n_e,cl>\t=\t', n_prom)
 
 #n_max CALCULATION --> This has to fit the  n_max
 
-n = 1e6
+n = 1e7
 num = 0
 denom = 0
 

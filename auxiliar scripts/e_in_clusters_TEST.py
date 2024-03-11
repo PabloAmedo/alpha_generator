@@ -22,7 +22,7 @@ Should I implement ALL the cluster calculation here??? Like NIST data and stuff
 Now I am taken the data from Clusters_calculation.py and moving on...
 """
 
-n_clusters_length = 57.3            #[clusters / cm] 
+n_clusters_length = 34.5            #[clusters / cm] 
 mfp = 27.8                          #[1/cm] mean free path
 n_avg = 3.3                         #[e/cl] average number of electrons per cluster
 L = 150                             #[cm] length of the track (len of BAT (?))

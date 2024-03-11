@@ -24,17 +24,17 @@ plt.close('all')
 # =============================================================================
 
 #Inputs -----> from file (FIXME)
-n_tracks = 2
+n_tracks = 1
 E =  4000   #E = 4000 [MeV] (CR)
 muons = []                          #list where muon tracks will be stored
-dimensions = [15,10,10]
+dimensions = [50,50,50]
 bins = 100
 sigma_diff = 0.018
 sigma_PSF = 0
 
 #Muons generation
 muon = muon_generator(energy = E, geometry = dimensions) #First generate the muon object
-muon.produce_muon(n = n_tracks, store = muons, gas= 'Xenon') #generate muon's obj stored in muons list
+muon.produce_muon(n = n_tracks, store = muons, gas= 'Argon', line=True) #generate muon's obj stored in muons list
 
 #Applying diffusion to each track
 diff_handler=Diffusion_handler(sigma_diff= sigma_diff ,sigma_PSF=sigma_PSF)

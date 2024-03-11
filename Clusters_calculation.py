@@ -23,7 +23,7 @@ NIST: ESTAR data from NIST (well, ESTAR in this case, I can try to use ASTAR 2)
 """
 gammas_Ar=np.array([4.0,3.5])
 cluster_Ar=np.array([27.8,28.6])
-
+rho_Ar = 1.66201
 gammas_Xe = np.array(( 4.0))
 clusters_Xe = np.array((44))
 
@@ -39,27 +39,26 @@ def clusters_cm(Emuon, Wi = 26.4, gas = 'Argon', cl_measurements = cluster_Ar, g
                     inplace=True)
 
     NISTdata=NISTdata.drop(columns={'Unnamed: 2'})
-
+    NISTdata['dE/dx [MeV/cm]'] = rho_Ar * NISTdata['dE/dx [MeV cm2/g]']
     #Manually introduce experimental data (from book)  --> This is just to make the W calculation (we need data)
     
     E_book = 0.511*(gammas - 1)                                                    #transform gamma to E
     
     
-    
-    #K calculation----------------------------------------------------------------- 
+    #==========================================================================
+    #K calculation-------------------------------------------------------------
     
     """
     We are going to calculate the difference between the data points ([ERM69]) and 
     the corresponding stopping power predicted by Bethe-Bloch curve:
     
     In a first approach I am going to perform a linear extrapolation for the BB 
-    curve to match the energies, but I can consider two more options for a future:
-        FIXME
-        
-        -Export NIST data with the relevant energies included (they do the extrapo)
-        
+    curve to match the energies, but I can consider:
+
         -Fit a function to NIST data. (I guess that this is more general but I am 
                                        too lazy for it)
+        
+    THIS IS JUST FOR K CALCULATION, NOT DEDX
     """
     #Localize the energy range where we are moving on for every data point
     
@@ -68,6 +67,12 @@ def clusters_cm(Emuon, Wi = 26.4, gas = 'Argon', cl_measurements = cluster_Ar, g
         return a*x+b
     
     if gas == 'Argon':
+        """
+        I am going to set 2 scenarios: 
+            1st -> E is included in the downloaded NIST data
+            2nd -> E is bigger than the downloaded E range -> linear extrapolation
+        """
+        Eupper = max(NISTdata['Energy [MeV]'])
         E1_a=NISTdata.loc[NISTdata['Energy [MeV]']<E_book[0]].index[-1]
         E1_b=(NISTdata.loc[NISTdata['Energy [MeV]']>E_book[0]]).index[0]
         
@@ -78,14 +83,14 @@ def clusters_cm(Emuon, Wi = 26.4, gas = 'Argon', cl_measurements = cluster_Ar, g
         
         
         xdata=[NISTdata.loc[E1_a]['Energy [MeV]'], NISTdata.loc[E1_b]['Energy [MeV]']]#, NISTdata.loc[E2_a]['Energy [MeV]']]
-        ydata=[NISTdata.loc[E1_a]['dE/dx [MeV cm2/g]'], NISTdata.loc[E1_b]['dE/dx [MeV cm2/g]']]#, NISTdata.loc[E2_a]['dE/dx [MeV cm2/g]']]
+        ydata=[NISTdata.loc[E1_a]['dE/dx [MeV/cm]'], NISTdata.loc[E1_b]['dE/dx [MeV/cm]']]#, NISTdata.loc[E2_a]['dE/dx [MeV cm2/g]']]
         fit,_=sco.curve_fit(linear, xdata, ydata)
         
         #Calculate dE/dx for data points energy
-        dEdx_fit=linear(E_book,*fit)
+        dEdx_fit = linear(E_book,*fit)
         
         K = cl_measurements / dEdx_fit
-        Kmean=np.mean(K)
+        Kmean = np.mean(K)
         
     elif gas == 'Xenon':
         
@@ -93,7 +98,7 @@ def clusters_cm(Emuon, Wi = 26.4, gas = 'Argon', cl_measurements = cluster_Ar, g
         E1_b=NISTdata.loc[NISTdata['Energy [MeV]']>E_book].index[0]
         
         xdata=[NISTdata.loc[E1_a]['Energy [MeV]'], NISTdata.loc[E1_b]['Energy [MeV]']] #, NISTdata.loc[E2_a]['Energy [MeV]']]
-        ydata=[NISTdata.loc[E1_a]['dE/dx [MeV cm2/g]'], NISTdata.loc[E1_b]['dE/dx [MeV cm2/g]']]#, NISTdata.loc[E2_a]['dE/dx [MeV cm2/g]']]
+        ydata=[NISTdata.loc[E1_a]['dE/dx [MeV/cm]'], NISTdata.loc[E1_b]['dE/dx [MeV/cm]']]#, NISTdata.loc[E2_a]['dE/dx [MeV cm2/g]']]
         fit,_=sco.curve_fit(linear, xdata, ydata)
         
         #Calculate dE/dx for data points energy
@@ -101,8 +106,6 @@ def clusters_cm(Emuon, Wi = 26.4, gas = 'Argon', cl_measurements = cluster_Ar, g
         
         K = cl_measurements / dEdx_fit
         Kmean=np.mean(K)
-        
-        
         
         
     """
@@ -114,16 +117,45 @@ def clusters_cm(Emuon, Wi = 26.4, gas = 'Argon', cl_measurements = cluster_Ar, g
     """
     #------------------------------------------------------------------------------
     #CALCULATION OF THE AVG N OF CLUSTERS ACCORDING TO MUON ENERGY
-    
+    interp_Eloss = np.interp(Emuon, NISTdata['Energy [MeV]'], NISTdata['dE/dx [MeV/cm]'])
+
     #This energy is higher than the data used from NIST, so I am just extrapolating
     #extrapolate to linear y=mx+n
-    m_extr=(NISTdata['dE/dx [MeV cm2/g]'][80]-NISTdata['dE/dx [MeV cm2/g]'][78])/(NISTdata['Energy [MeV]'][80]-NISTdata['Energy [MeV]'][78])
-    n_extr=NISTdata['dE/dx [MeV cm2/g]'][80]-m_extr*NISTdata['Energy [MeV]'][80]
+    #FIXME: this can be done by numpy.interpolate (?)
+    m_extr=(NISTdata['dE/dx [MeV/cm]'][80]-NISTdata['dE/dx [MeV/cm]'][78])/(NISTdata['Energy [MeV]'][80]-NISTdata['Energy [MeV]'][78])
+    n_extr=NISTdata['dE/dx [MeV/cm]'][80]-m_extr*NISTdata['Energy [MeV]'][80]
     
-    Ncluster_muon = (m_extr*Emuon+n_extr)*Kmean
+    #FIXME: this is only working for high energies!!!!!!!!!! ------> I've changed to interp Eloss
+    #dEdx = (m_extr*Emuon+n_extr)
+    Ncluster_muon = interp_Eloss * Kmean
     print('\nFor a muon with {} MeV:\t'.format(Emuon), Ncluster_muon,'[clusters/cm]')
-    
-    return (m_extr*Emuon+n_extr) , Ncluster_muon
+    print('K factor:\t', Kmean)
+                                    
+    return interp_Eloss , Ncluster_muon
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #PLOT--------------------------------------------------------------------------
 """
