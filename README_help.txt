@@ -4,6 +4,9 @@ QUICK DOCUMENTATION TO RUN THE SIMULATIONS:
 Things that you can edit and things you should not :)
 
 
+***WARNING***
+Some scripts could raise errors because I moved them to other folders!!
+
 
 
 FILES:

@@ -4,9 +4,14 @@ Created on Tue Sep 12 11:16:45 2023
 
 @author: Pablo
 """
+import os
+os.chdir('../')
 
 from Alpha_track_simulator import*
+import sys
 
+
+sys.path.append('/..')
 
 
 # This is an example of how to generate alpha tracks using this generator

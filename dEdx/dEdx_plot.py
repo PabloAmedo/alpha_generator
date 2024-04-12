@@ -5,23 +5,25 @@ Created on Wed Feb 28 17:28:16 2024
 @author: diego
 """
 
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Feb  28 2024
-
-@author: diego
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 from Alpha_track_simulator import *
 from scipy.optimize import curve_fit
 
+#Avoid warning in console
+import warnings
+from scipy.optimize import OptimizeWarning
+warnings.filterwarnings("ignore", category = OptimizeWarning)                  #this avoids the covariance calculation warning 
 
+print('Running...')
+"""
+NOT WORKING BECAUSE I HAVE TO UPDATE THE NUMBER OF CLUSTERS PER UNIT LENGTH IN 
+THE Alpha_track_simulator.py FILE. 
+"""
 #INPUTS
 n_tracks = 1
-low_E = np.linspace(0.01, 1, 5)
-high_E = np.linspace(1, 1000, 5)
+low_E = np.linspace(0.0001, 100, 5000)
+high_E =[]# np.linspace(1, 1000, 500)
 energy_list = list(low_E) + list(high_E)  #[0.01, 0.1, 1, 10, 100]   #(MeV)
 dimensions = [250,250,250]          #We are considering 2.5 (m) length 
 pxs = 100                           #n Pixels
@@ -42,7 +44,7 @@ for energy in energy_list:
     lcp_list = []  
     particle_gen = muon_generator(energy = energy, geometry = dimensions)      #First generate the lcp generator object
     #Particle generation
-    particle_gen.produce_muon(n = n_tracks, store = lcp_list, gas= 'Argon')    #generate lcp's obj stored in muons list
+    particle_gen.produce_muon(n = n_tracks, store = lcp_list, gas= 'ArCH4-90/10', line= True)    #generate lcp's obj stored in muons list
     
     #Iteration over each track
     for lcp in lcp_list:

@@ -20,13 +20,13 @@ gas1 = 'Argon'
 gas2 = 'Xenon'
 gases = (gas1, gas2)
 
-n_tracks = 100
-Emuon = 5000                                    #(MeV) (CR)
+n_tracks = 50000
+Emuon = 3000                                    #(MeV) (CR)
 muon_mass = 105.66                            #(MeV/c2)  MUON
 p = np.sqrt((Emuon + muon_mass)**2 - muon_mass**2)
-dimensions = ([0.3,0.3,0.3], [1.4,1.4,1.4])     #Different geometries for the track lengths (format is weird, I know)
+dimensions = ([0.5,0.5,0.5], [0.75,0.75,0.75],[1,1,1], [2.5,2.5,2.5], [5,5,5], [7.5,7.5,7.5])     #Different geometries for the track lengths (format is weird, I know)
 rho_Ar = 1.662                                  #rho Ar/CH4 (93/7)
-W_Ar = 26.4                                     #eV
+W_Ar = 26.4e-3                                     #keV
 
 #LOAD DATA (Allison & Cobb paper and electron distribution per cluster)
 #Load Allison & Cobb
@@ -37,7 +37,7 @@ x_AC_data = np.linspace(0, 10, len(ACdata)) #* (1/(1.592 / (2.5)))  #rho_ArCH4(9
 
 #FUNCTIONS DEFINITION (This could be imported from another .py with aux functions, at least FWHM)
 def Resolution_xP(x, n = 1 , P = 1):
-    return 81 * n**(-0.46) * (x*P)**(-0.32)
+    return 96 * n**(-0.46) * (x*P)**(-0.32)
 
 def E_over_I(beta, xP, nu=18, I=188):   #Not sure at all about this
     return (6.83*nu*xP)/(I*beta**2)
@@ -72,10 +72,11 @@ for dimension in dimensions:
     E_loss_cm = []                                                             #basically de dEdx
     for muon in muons:
         #muon.fill()
+        e_per_cluster = muon.n_e_cl
         length = ( muon.track_length)
         n_electrons = muon.n_electrons
-        E_loss_cm.append((n_electrons * W_Ar * 1e-3) / (length))    #keV/cm
-    
+        E_loss = (statistics_avalanche(e_per_cluster) * W_Ar )    #keV/cm
+        E_loss_cm.append(sum(E_loss) / length)
     """
     We can hide the next histograms if we do not want to plot them by calling 
     np.histogram instead plt.hist (it does exactly the same)
@@ -147,7 +148,7 @@ widths_norm_Xe = widths_Xe / widths_Xe[norm_index]
 E_I_Xe = E_over_I(beta = beta, xP = tr_len_Xe)
 """
 
-"""
+
 #Show the Figure (ENERGY DISTRIBUTION RESOLUTION (?) )=========================
 plt.figure()
 plt.plot(E_I_Ar, widths_norm_Ar *100 , 'o', color = 'g', label = 'Ar')
@@ -158,7 +159,5 @@ plt.yscale('log')
 plt.xlabel('Detector length (E/I adim)')
 plt.ylabel('FWHM (%)')
 plt.title('Ionization resolution. (tracks={})'.format(n_tracks))
-plt.ylim([1,250])
 plt.grid()
 plt.legend(loc = 'lower left')
-"""
