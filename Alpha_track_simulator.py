@@ -56,7 +56,7 @@ from bragg_peak import *
 # - Optimize the directories/folders structure
 # - Create that folders structure, lol
 # - Include dEdx from Santovetti et al. to compare with simulated -- This was previously done by one script that it's not in use now
-#
+# - Include the nclusters for CH4 on the calculation of n_cl_cm (now is done by *1.1 factor)
 # =============================================================================
 
 
@@ -162,7 +162,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
         #Define the initial conditions here
         self.energy = energy                                                   #MeV
         self.xmax, self.ymax, self.zmax = geometry
-        self.mass = mass                                                       #muon mass by default
+        self.mass = mass                                                       #MeV/c2 muon mass by default
         self.gas = gas
         self.P = pressure                                                      #bar
         
@@ -191,52 +191,36 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
         
         track_len=[]  
         for i in range(n):
-            #Generate the initial positions
-            y0      = np.random.rand() * self.ymax                             #Random numb between 0 and ymax
-            theta0  = np.random.rand() * np.pi                                 #Random number between 0 and pi
-            #phi0   = np.random.rand() * 2 * np.pi 
             phi0    = 0                                                        #FIXME: just for testing (simple case)
             
             if line == True:
-                y0 = self.ymax / 2
+                y0 = y0_in if y0_in != None else self.ymax / 2
                 yout = y0
                 xout = self.xmax
+                
+            
             else:
-                """
-               FIXME
-               THE FOLLOWING LINES CAN BE IMPROVED FOR SURE------------------------
-               """
-                if theta0 > np.pi/2:
-                    alpha = np.pi - np.pi/2 - (np.pi-theta0)
-                    x =  y0 / np.tan(alpha)
-                    
-                if theta0 <= np.pi/2:
-                    alpha = np.pi - np.pi/2 - theta0
-                    x = (self.ymax - y0) / np.tan(alpha)
-                    
-                #I should add condition about theta0 here too
-                if x <= self.xmax and theta0 <= np.pi/2:
+                y0 = y0_in if y0_in != None else self.ymax / 2
+                theta0 = theta0_in* (np.pi/180) if theta0_in != None else np.random.rand() * np.pi/2
+                
+                theta_max = np.arctan((self.ymax - y0) / self.xmax)
+                
+                if theta0 <= theta_max:
+                    xout = self.xmax
+                    yout = y0 + np.tan(theta0) * xout
+                else:
                     yout = self.ymax
-                    xout = x
-                elif x <= self.xmax and theta0 > np.pi/2:
-                    yout = 0
-                    xout = x
-                elif x > self.xmax and theta0 <= np.pi/2:
-                    yout = self.xmax * np.tan(alpha)
-                    xout = self.xmax
-                elif x > self.xmax and theta0 > np.pi/2:
-                    alpha = theta0 - np.pi / 2
-                    yout = self.xmax * np.tan(alpha)
-                    xout = self.xmax
-                    
+                    xout = (self.ymax - y0) / np.tan(theta0)
+            
             tr_len = np.sqrt(xout**2 + (yout-y0)**2)
             
             ####################### CLUSTER + ELECTRONS #######################
             
             #Getting the number of clusters for the given self.energy and particle (self.mass)
-            #FIXME
-            n_cl_cm = 1.1 * self.P * dNdx(self.energy, self.mass)   #Factor *1.1 (10%) to take care of the mix(CH4 clusters) and possible err on the calculatios
-            
+            n_cl_cm = self.P * dNdx(self.energy, self.mass)
+            #print('n_cl_cm', n_cl_cm)
+            #n_cl_cm = 295.329 #from HEED simulations
+
             #Calculate the avg n of clusters for the track
             n_cl_avg = np.random.poisson(lam = tr_len * n_cl_cm)
             
@@ -247,8 +231,12 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
             def ClusterParametrizationCH4(n):
                 return 0.119/n**2
             
+            def ClusterParametrizationGeneral(n):
+                return 1/n**2
+            
+            #FIXME: I HAVE TO CLEAN THIS A BIT (remove the useless ones)
             #CLUSTER DISTRIBUTOIN FOR DIFFERENT GASES --- Maybe this could be done from a dict???? - fixme
-            if self.gas == 'Argon': 
+            if self.gas == 'Argon':#Fischle 
                 P_el = np.loadtxt('data/clusters_distributions/Ar_cluster_distribution_experimental.txt') / 100
                 n_el = np.linspace(1, 19, 19)
                 probabilities_20 = ClusterParametrizationAr(np.linspace(20, e_cut, e_cut - 19))
@@ -256,7 +244,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 
                 n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
                                           p = probs_final / probs_final.sum())
-            elif self.gas == 'CH4':
+            elif self.gas == 'CH4':#Fischle
                 P_el = np.loadtxt('data/clusters_distributions/CH4_cluster_distribution_experimental.txt') / 100
                 n_el = np.linspace(1, 19, 19)
                 probabilities_20 = ClusterParametrizationCH4(np.linspace(20, e_cut, e_cut - 19))
@@ -265,13 +253,58 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
                                           p = probs_final / probs_final.sum())
             
-            elif self.gas == 'ArCH4-90/10':
+            elif self.gas == 'ArCH4-90/10':#from dEdx presentation (digitalized with webplotdigitalizer)
                 data_ArCH4_9010 = np.loadtxt('data/clusters_distributions/ArCH4_90-10_cluster_distribution_HEED.csv', delimiter=';')
                 _, P_el = np.split(data_ArCH4_9010, 2, axis = 1)
                 P_el = P_el.flatten()
                 n_el = np.linspace(1, 133, 133)
                 probabilities_133 = ClusterParametrizationAr(np.linspace(134, e_cut, e_cut-133))
                 probs_final = np.concatenate((P_el, probabilities_133))
+                
+                n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
+                                          p = probs_final / probs_final.sum())
+                
+            elif self.gas == 'ArCH4-93/7_01mm':#from HEED (01mm to remove the XR propagation)
+                data_ArCH4_9307 = np.loadtxt('data/clusters_distributions/ArCH4-93-7-10bar_0.1x0.1x0.1mmCell_pi2.5GeV_normalized.txt' , skiprows = 1)
+                n_el, P_el, _ = np.split(data_ArCH4_9307, 3, axis = 1)
+                P_el = P_el.flatten() ; n_el = n_el.flatten()
+                probabilities_aboveAr = ClusterParametrizationAr(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
+                probabilities_aboveCH4 = ClusterParametrizationCH4(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
+                probabilities_above = probabilities_aboveAr*0.93 + probabilities_aboveCH4*0.07
+                probs_final = np.concatenate((P_el, probabilities_above))
+                
+                n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
+                                          p = probs_final / probs_final.sum())
+                
+            elif self.gas == 'ArCF4-99/1_01mm':#from HEED (01mm to remove the XR propagation)
+                data_ArCF4_9901 = np.loadtxt('data/clusters_distributions/ArCF4-99-1-10bar_0.1x0.1x0.1mmCell_2.5GeVmuons_normalized.txt' , skiprows = 1)
+                n_el, P_el, _ = np.split(data_ArCF4_9901, 3, axis = 1)
+                P_el = P_el.flatten() ; n_el = n_el.flatten()
+                probabilities_above = ClusterParametrizationAr(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
+                probs_final = np.concatenate((P_el, probabilities_above))
+                
+                n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
+                                          p = probs_final / probs_final.sum())
+                
+                
+            elif self.gas == 'DEGRAD_data': #DEGRAD (it was used to compare with Fischle data)
+                data_DEGRAD = np.loadtxt('data/clusters_distributions/Degrad_Pure_Ar_v3.txt')
+                n_el, P_el = np.split(data_DEGRAD, 2, axis = 1)
+                P_el = P_el.flatten() ; n_el = n_el.flatten()
+                probabilities_above = ClusterParametrizationAr(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
+                probs_final = np.concatenate((P_el, probabilities_above))
+                
+                n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
+                                          p = probs_final / probs_final.sum())
+                
+            elif self.gas == 'KrCH4-93/7_01mm':#from HEED (01mm to remove the XR propagation)
+                data_KrCH4_9307 = np.loadtxt('.txt' , skiprows = 1)
+                n_el, P_el, _ = np.split(data_KrCH4_9307, 3, axis = 1)
+                P_el = P_el.flatten() ; n_el = n_el.flatten()
+                probabilities_aboveKr = ClusterParametrizationGeneral(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
+                probabilities_aboveCH4 = ClusterParametrizationCH4(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
+                probabilities_above = probabilities_aboveKr*0.93 + probabilities_aboveCH4*0.07
+                probs_final = np.concatenate((P_el, probabilities_above))
                 
                 n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
                                           p = probs_final / probs_final.sum())
@@ -318,11 +351,11 @@ class muon_tracks(muon_generator):
         self.xmax, self.ymax, self.zmax = geometry
         
         if self.y > self.y0:
-            self.phi = np.arctan(abs(self.y-self.y0) / (self.x-self.x0))
+            self.theta = np.arctan(abs(self.y-self.y0) / (self.x-self.x0))
         elif self.y == self.y0:
-            self.phi = np.pi / 2
+            self.theta = np.pi / 2
         else:
-            self.phi = np.pi / 2 + np.arctan(abs(self.y-self.y0) / (self.x-self.x0))
+            self.theta = np.pi / 2 + np.arctan(abs(self.y-self.y0) / (self.x-self.x0))
         
         #This is defined at 2 sigma and will be handled by the Difussion_handler class
         self.spread=spread

@@ -16,9 +16,10 @@ print('Running...\n')
 #INPUTS========================================================================
 n_tracks    =   1
 P           =   10                                                             #bar
-line        =   False
+#y0          =   10
+#theta0      =   50
 E           =   4000                                                           #E = 4000 [MeV] (CR)
-dimensions  =   [50,50,50]
+dimensions  =   [25,25,25]
 mass        =   105.66
 gas         =   'Argon'
 e_cut       =   1000
@@ -34,7 +35,7 @@ muons       =   []
 
 #Muons generation
 muon = muon_generator(energy = E, geometry = dimensions, gas = gas, pressure = P)            #First generate the muon object
-muon.produce_muon(n = n_tracks, store = muons, line = line, e_cut = e_cut)     #generate muon's obj stored in muons list
+muon.produce_muon(n = n_tracks, store = muons, e_cut = e_cut)     #generate muon's obj stored in muons list
 
 #Applying diffusion to each track
 diff_handler=Diffusion_handler(sigma_diff= sigma_diff ,sigma_PSF=sigma_PSF)
