@@ -167,7 +167,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
         self.P = pressure                                                      #bar
         
         
-    def produce_muon(self,n , store, y0_in=None, phi0_in=None, theta0_in=None, e_cut = 10000, line = False):
+    def produce_muon(self,n , store, y0_in=None, phi0_in=None, theta0_in=None, e_cut = 10000, line = False, n_cl_cm_in = False):
         
         """
         This method is used to generate n muon tracks by randomly generate a 
@@ -197,6 +197,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 y0 = y0_in if y0_in != None else self.ymax / 2
                 yout = y0
                 xout = self.xmax
+                theta0 = 0
                 
             
             else:
@@ -217,9 +218,10 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
             ####################### CLUSTER + ELECTRONS #######################
             
             #Getting the number of clusters for the given self.energy and particle (self.mass)
-            n_cl_cm = self.P * dNdx(self.energy, self.mass)
+            #n_cl_cm = self.P * dNdx(self.energy, self.mass)
             #print('n_cl_cm', n_cl_cm)
-            #n_cl_cm = 295.329 #from HEED simulations
+            
+            n_cl_cm = self.P * dNdx(self.energy, self.mass) if n_cl_cm_in == False else self.P * n_cl_cm_in #from HEED simulations
 
             #Calculate the avg n of clusters for the track
             n_cl_avg = np.random.poisson(lam = tr_len * n_cl_cm)
@@ -253,7 +255,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
                                           p = probs_final / probs_final.sum())
             
-            elif self.gas == 'ArCH4-90/10':#from dEdx presentation (digitalized with webplotdigitalizer)
+            elif self.gas == 'ArCH4_90-10':#from dEdx presentation (digitalized with webplotdigitalizer)
                 data_ArCH4_9010 = np.loadtxt('data/clusters_distributions/ArCH4_90-10_cluster_distribution_HEED.csv', delimiter=';')
                 _, P_el = np.split(data_ArCH4_9010, 2, axis = 1)
                 P_el = P_el.flatten()
@@ -264,7 +266,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
                                           p = probs_final / probs_final.sum())
                 
-            elif self.gas == 'ArCH4-93/7_01mm':#from HEED (01mm to remove the XR propagation)
+            elif self.gas == 'ArCH4_93-7_01mm':#from HEED (01mm to remove the XR propagation)
                 data_ArCH4_9307 = np.loadtxt('data/clusters_distributions/ArCH4-93-7-10bar_0.1x0.1x0.1mmCell_pi2.5GeV_normalized.txt' , skiprows = 1)
                 n_el, P_el, _ = np.split(data_ArCH4_9307, 3, axis = 1)
                 P_el = P_el.flatten() ; n_el = n_el.flatten()
@@ -276,7 +278,20 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
                                           p = probs_final / probs_final.sum())
                 
-            elif self.gas == 'ArCF4-99/1_01mm':#from HEED (01mm to remove the XR propagation)
+            elif self.gas == 'ArCH4_90-10_01mm':#from HEED (01mm to remove the XR propagation)
+                data_ArCH4_9010 = np.loadtxt('data/clusters_distributions/ArCH4-90-10-10bar_0.1x0.1x0.1mmCell_pi2.5GeV_normalized.txt' , skiprows = 1)
+                n_el, P_el, _ = np.split(data_ArCH4_9010, 3, axis = 1)
+                P_el = P_el.flatten() ; n_el = n_el.flatten()
+                probabilities_aboveAr = ClusterParametrizationAr(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
+                probabilities_aboveCH4 = ClusterParametrizationCH4(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
+                probabilities_above = probabilities_aboveAr*0.90 + probabilities_aboveCH4*0.1
+                probs_final = np.concatenate((P_el, probabilities_above))
+                
+                n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
+                                          p = probs_final / probs_final.sum())
+                
+                
+            elif self.gas == 'ArCF4_99-1_01mm':#from HEED (01mm to remove the XR propagation)
                 data_ArCF4_9901 = np.loadtxt('data/clusters_distributions/ArCF4-99-1-10bar_0.1x0.1x0.1mmCell_2.5GeVmuons_normalized.txt' , skiprows = 1)
                 n_el, P_el, _ = np.split(data_ArCF4_9901, 3, axis = 1)
                 P_el = P_el.flatten() ; n_el = n_el.flatten()
@@ -297,7 +312,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
                                           p = probs_final / probs_final.sum())
                 
-            elif self.gas == 'KrCH4-93/7_01mm':#from HEED (01mm to remove the XR propagation)
+            elif self.gas == 'KrCH4_93-7_01mm':#from HEED (01mm to remove the XR propagation)
                 data_KrCH4_9307 = np.loadtxt('.txt' , skiprows = 1)
                 n_el, P_el, _ = np.split(data_KrCH4_9307, 3, axis = 1)
                 P_el = P_el.flatten() ; n_el = n_el.flatten()
