@@ -435,7 +435,7 @@ class muon_tracks(muon_generator):
                 # Calculate the transverse diffusion on the z-y plane
                 if self.spread!= 0:
                     #Now we need to draw the number from the gaussian distribution
-                    pos = np.random.multivariate_normal((0,0), cov=self.spread*np.identity(2),size=1)
+                    pos = np.random.multivariate_normal((0,0), cov=self.spread**2*np.identity(2),size=1)
                     
                     self.electron_positions_diff[aux_electrons_total,0]+=pos[:,0]
                     
