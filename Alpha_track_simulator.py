@@ -167,7 +167,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
         self.P = pressure                                                      #bar
         
         
-    def produce_muon(self,n , store, y0_in=None, phi0_in=None, theta0_in=None, e_cut = 10000, line = False, n_cl_cm_in = False):
+    def produce_muon(self,n , store, y0_in=None, phi0_in=None, theta0_in=None, e_cut = 10000, line = False, n_cl_cm_in = None):
         
         """
         This method is used to generate n muon tracks by randomly generate a 
@@ -201,7 +201,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 
             
             else:
-                y0 = y0_in if y0_in != None else self.ymax / 2
+                y0 = y0_in if y0_in != None else self.ymax * np.random.rand()
                 theta0 = theta0_in* (np.pi/180) if theta0_in != None else np.random.rand() * np.pi/2
                 
                 theta_max = np.arctan((self.ymax - y0) / self.xmax)
@@ -221,8 +221,10 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
             #n_cl_cm = self.P * dNdx(self.energy, self.mass)
             #print('n_cl_cm', n_cl_cm)
             
-            n_cl_cm = self.P * dNdx(self.energy, self.mass) if n_cl_cm_in == False else self.P * n_cl_cm_in #from HEED simulations
-
+            n_cl_cm = self.P * dNdx(self.energy, self.mass) #if n_cl_cm_in == None else self.P * n_cl_cm_in #from HEED simulations
+            #The factor is a correction to reproduce PEP4 in all the momentum range
+            print('N/cm:\t', n_cl_cm)
+            
             #Calculate the avg n of clusters for the track
             n_cl_avg = np.random.poisson(lam = tr_len * n_cl_cm)
             
@@ -292,7 +294,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 
                 
             elif self.gas == 'ArCF4_99-1_01mm':#from HEED (01mm to remove the XR propagation)
-                data_ArCF4_9901 = np.loadtxt('data/clusters_distributions/ArCF4-99-1-10bar_0.1x0.1x0.1mmCell_2.5GeVmuons_normalized.txt' , skiprows = 1)
+                data_ArCF4_9901 = np.loadtxt('data/clusters_distributions/ArCF4-99-1-10bar_0.1x0.1x0.1mmCell_8GeVmuons_normalized.txt' , skiprows = 1)
                 n_el, P_el, _ = np.split(data_ArCF4_9901, 3, axis = 1)
                 P_el = P_el.flatten() ; n_el = n_el.flatten()
                 probabilities_above = ClusterParametrizationAr(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
@@ -319,6 +321,21 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 probabilities_aboveKr = ClusterParametrizationGeneral(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
                 probabilities_aboveCH4 = ClusterParametrizationCH4(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
                 probabilities_above = probabilities_aboveKr*0.93 + probabilities_aboveCH4*0.07
+                probs_final = np.concatenate((P_el, probabilities_above))
+                
+                n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
+                                          p = probs_final / probs_final.sum())
+                
+            elif self.gas == 'PEP4':#from HEED (01mm to remove the XR propagation)
+                n_cl_cm = 0.9844562192883783 * self.P * dNdx(self.energy, self.mass)
+                n_cl_avg = np.random.poisson(lam = tr_len * n_cl_cm)
+                
+                data_PEP4 = np.loadtxt('data/clusters_distributions/ArCH4-80-20-10bar_0.1x0.1x0.1mmCell_2.5GeVmuons_normalized.txt' , skiprows = 1)
+                n_el, P_el, _ = np.split(data_PEP4, 3, axis = 1)
+                P_el = P_el.flatten() ; n_el = n_el.flatten()
+                probabilities_aboveAr = ClusterParametrizationAr(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
+                probabilities_aboveCH4 = ClusterParametrizationCH4(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
+                probabilities_above = probabilities_aboveAr*0.80 + probabilities_aboveCH4*0.20
                 probs_final = np.concatenate((P_el, probabilities_above))
                 
                 n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
@@ -643,7 +660,7 @@ class Noise():
         
         #Update the 2d histogram with this values and return it
         
-        return Hist2d+random_gauss
+        return Hist2d + random_gauss
         
         
 
@@ -655,7 +672,7 @@ class Image_2D():
         
         This object will be exported and loaded by our analysis framework"""
         
-    def __init__(self,track_list,hist_args={"bins":10},QE=1,GE=1,Tp=1,gain=1,ph_poiss=False):
+    def __init__(self,track_list,hist_args={"bins":10},QE=1,GE=1,Tp=1,gain=1,ph_poiss=False, pixel_size = 0.2):
         
         #List of tracks
         self.track_list=track_list
@@ -683,6 +700,20 @@ class Image_2D():
         self.Tp=Tp
         self.gain=gain    
     
+        #hist_args['bins'] are the TOTAL number of pixels per axis for the entire detector.
+        #We have to select the number of pixels involved in the tracking for smaller tracks.
+        tlen_x = []
+        tlen_y = []
+        for track in track_list:
+            tlen_x.append(track.x)
+            tlen_y.append(abs(track.y - track.y0))
+        
+        track_length_x = max(tlen_x)
+        track_length_y = max(tlen_y) if max(tlen_y) != 0.0 else 1.4
+        binsx = int(track_length_x / pixel_size)
+        binsy = int(track_length_y / pixel_size)
+        
+        hist_args['bins'] = (binsx, binsy)
         #Get the 2d hist for all the electrons and the edges from the list of tracks.
         #Extra arguments can be passed to the 2D numpy histogram function
         self.Hist2D_e,self.x_edges,self.y_edges=np.histogram2d(x=self.x_pos,y=self.y_pos,**hist_args)

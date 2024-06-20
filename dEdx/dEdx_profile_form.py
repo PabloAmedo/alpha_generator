@@ -10,26 +10,27 @@ from Alpha_track_simulator import*
 
 print('Running...\n')
 #INPUTS========================================================================
-gas          =       'DEGRAD_extrapolation'
+gas          =       'ArCH4_93-7_01mm'
 n_tracks     =       50000                                                     
 Emuon        =       3000                                                      #(MeV) (CR)
 mass         =       139.57                                                    #(MeV/c2)  pion
 p            =       np.sqrt((Emuon + mass)**2 - mass**2)
 dimensions   =       ([1.5,1.5,1.5])
-rho_Ar       =       1.592385                                                  #rho Ar/CH4 (93/7)
+rho_Ar       =       1.662                                                     #rho Ar/CH4 (93/7)
 W_Ar         =       26.4e-3                                                   #keV
 e_cut        =       10000                                                     #n_max electrons in a cluster
 bins         =       150 #FIX THIS
-Pressure     =       1                                                        #bar
+Pressure     =       1                                                         #bar
+n_cl_cm      =       None
 
-err_data     =       1.0   
+err_data     =       0.96 
 xrange       =       12
 
-fname        =       'ArCF4_99-01_10bar_1cm'
+fname        =       'ArCH4_93-07_1bar_1-5cm'
 
 #Labels
 hist_label   =       'Simulation'
-data_label   =       'Harris - Ar/CF4 (99/1)'
+data_label   =       'Experimental data'
 x_label      =       'Energy (keV)'
 y_label      =       'Counts'
 #==============================================================================
@@ -42,7 +43,7 @@ Harris_norm              =       counts_Harris / max(counts_Harris)
 #LCP GENERATOR=================================================================
 muons        =   []
 muon         =   muon_generator(energy = Emuon, geometry = dimensions, gas = gas, mass = mass, pressure = Pressure)          #First generate the muon generator object
-muon.produce_muon(n = n_tracks, store = muons, line = True, e_cut = e_cut)
+muon.produce_muon(n = n_tracks, store = muons, line = True, e_cut = e_cut, n_cl_cm_in = n_cl_cm)
 
 Sim_dEdx     =   []                                                            #Initialization list for simulated dE/dx -- truth
 Det_dEdx     =   []                                                            #Initialization list for detected dE/dx  -- after avalanche effect
@@ -87,10 +88,11 @@ plt.figure()
 #plt.title('Comparison {} with data'.format(gas), fontsize = 23)
 hval, hbins, _ = plt.hist(Det_dEdx , bins =  bins, label = hist_label, color = 'k', histtype = 'step')
 plt.plot(x_Harris*err_data, (counts_Harris / max(counts_Harris)) * max(hval), 'bx', label= data_label)
-plt.xlabel( x_label, fontsize = 13)
-plt.ylabel( y_label, fontsize = 13)
+plt.xlabel( x_label, fontsize = 25)
+plt.ylabel( y_label, fontsize = 25)
 plt.xlim([0 , xrange])
-plt.legend()
+plt.legend(fontsize = 18)
+plt.tick_params(axis='both', which='major', labelsize=20)
 plt.grid()
 
 #np.savetxt( fname +'_dEdx', Det_dEdx)
