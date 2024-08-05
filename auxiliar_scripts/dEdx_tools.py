@@ -25,16 +25,6 @@ def load_cd(path):
 
 def dNdx(Energy, mass,  Wi = 26.4, data = None):
     
-    """
-    Function to calculate the Cluster Density for a given energy range and mass 
-    (particle).
-    You can specify which data you want to use for the calculation:
-        - Ncl_Ar_good.csv : uses the results from Santovetti et al. 
-        "Primary ionization and energy loss calculation for helium, neon, argon 
-        and krypton" 
-        
-        - cluster_densities/[choose]: data from HEED
-    """
     #Load data scanned from paper
     #data_S         =       np.loadtxt('alpha_generator/data/' + data, delimiter=';')  #_S  ->  ref to Santovetti's data
     print(os.getcwd())
@@ -47,27 +37,9 @@ def dNdx(Energy, mass,  Wi = 26.4, data = None):
     #Momentum calculation
     momentum = np.sqrt((Energy + mass)**2 - mass**2)                           #mass units
     pm = momentum / mass
-    """
-    #Define interpolators
-    muon_interpolator = interp1d(pm_mu, dNdx_mu, kind='linear', fill_value='extrapolate') #slinear
-    pion_interpolator = interp1d(pm_pi, dNdx_pi, kind='linear', fill_value='extrapolate') #slinear
-    kaon_interpolator = interp1d(pm_k, dNdx_k, kind='linear', fill_value='extrapolate') #slinear
-    proton_interpolator = interp1d(pm_p, dNdx_p, kind='linear', fill_value='extrapolate') #slinear
-    """
+
     muon_interpolator = interp1d(pm_mu, dNdx_mu, kind='linear', fill_value='extrapolate') #slinear
     extrapolator = interp1d(pm_mu, dNdx_mu, kind='zero', fill_value='extrapolate')
-    """
-    if mass == 105.66:
-        dNdx_extrapolated = muon_interpolator(pm)
-    elif mass == 139.57:
-        dNdx_extrapolated = pion_interpolator(pm)
-    elif mass == 493.7:
-        dNdx_extrapolated = kaon_interpolator(pm)
-    elif mass == 938.27:
-        dNdx_extrapolated = proton_interpolator(pm)
-    else:
-        dNdx_extrapolated = extrapolator(pm)
-    """
     
     data_interpolator = interp1d(pm_mu, dNdx_mu, kind='linear', fill_value='extrapolate') #slinear
     pmDataRange = pm[pm < 1000 ]
