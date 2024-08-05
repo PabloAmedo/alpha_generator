@@ -9,7 +9,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
-from tools import *
+from optical_gain_tools import *
 from scipy.optimize import curve_fit
 
 print('Running...')

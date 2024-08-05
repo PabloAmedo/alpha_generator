@@ -37,8 +37,8 @@ for path in add_to_path:
     else:
         sys.path.append(path)
 
-from Clusters_calculation import *
-from bragg_peak import *
+from dEdx_tools import *
+from bragg_distribution import *
 
 ###############################################################################
 # =============================================================================

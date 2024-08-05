@@ -179,3 +179,32 @@ def gainFunc(data, qeff=1,geomeff=1,T=1,E=5.5,W=25.7e-6,A=500, exp_time=1, base 
     print('Gain: %.3e \t'%gain)
     
     return gain
+
+
+def GeometricalEfficiency(N, f, distance):
+    
+    magnification = f / (f - distance)
+    diameter = f / N
+    e_geo = np.pi * (diameter / 2)**2 / (4 * np.pi * (f * (1 - 1/magnification))**2)
+    return magnification, e_geo
+
+
+
+def image_combiner(n, folder, path = None, nameformat = 'ss_single_', ext = '.tiff', save = False, save_name = None):
+    
+    if path == None:
+        im_path = ''
+    else:
+        im_path = path
+    
+    im_ = im_path + folder + nameformat + '1.tiff'                             #Load one image to get its size
+    final_image = np.zeros_like(im_, dtype = float)
+    for i in range(1, n + 1):
+        image = Image.open(im_path + folder + nameformat + str(i) + ext)
+        image_array = np.array(image)
+        final_image = final_image + image_array
+        
+    if save == True:
+        np.savetxt(save_name, final_image)
+    
+    return final_image

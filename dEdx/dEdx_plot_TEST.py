@@ -36,7 +36,7 @@ os.chdir('alpha_generator/')
 #INPUTS========================================================================
 gas             =       'PEP4'
 n_cl_cm         =       False #29.6933                                         #from HEED simulations
-name            =       'PEP4_timeTEST'
+name            =       'DELETE'
 file_tosave     =       open('dEdx/simulated_data_lt/'+ name +'.txt', 'x');         
 file_tosave.write('\nINPUTS\n'+'='*50+'\n')  
 energy_list     =       np.logspace(1, 5, 10000) ;          file_tosave.write('Energy range:\t{} - {} ({}) (MeV)\n'.format(energy_list[0], energy_list[-1], len(energy_list)))
@@ -50,7 +50,7 @@ momentum        =       []
 binsx           =       int(150*2)
 binsy           =       int(75*2);                          file_tosave.write('Bins(x,y):\t{}\n'.format([binsx, binsy]))
 
-n_particles     =       5000;                                file_tosave.write('SIMULATED EVENTS:\t{}\n'.format(n_particles))
+n_particles     =       5;                                file_tosave.write('SIMULATED EVENTS:\t{}\n'.format(n_particles))
 
 EnergyCut_KaonProton = 2500
 

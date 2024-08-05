@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Nov  6 11:42:22 2023
+Created on Mon Aug  5 13:15:26 2024
 
-@author: diego
+@author: usuario
 """
 
-import numpy as np
-from scipy.interpolate import interp1d
 import os
-os.chdir('../')
-# CALCULATION OF CLUSTERS/MM 
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
+
+os.chdir('../') #!!!!!!!!!!
 
 def load_cd(path):
     data_S         =       np.loadtxt( path, skiprows=2, delimiter=' ')

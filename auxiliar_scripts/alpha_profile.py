@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.colors as mcolors
 import pandas as pd
-from tools import *
+from optical_gain_tools import *
 import os
 
 print('Running...')

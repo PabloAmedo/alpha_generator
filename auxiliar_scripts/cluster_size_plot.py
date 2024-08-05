@@ -4,13 +4,14 @@ Created on Fri May  3 11:10:49 2024
 
 @author: diego
 """
-
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 print('Running...')
 
+os.chdir('../')
 def ClusterParametrizationAr(n):
     return 0.216/n**2 
 
@@ -82,8 +83,8 @@ plt.figure()
 plt.title('Ar/CF4 (99/1)', fontsize = 40)
 #plt.plot(n_el_ArCH4_9010, P_el_ArCH4_9010, label = 'Ar/CH4 (90/10)')
 #plt.plot(n_el_ArCF4_991, P_el_ArCF4_991, linestyle = 'dashdot' ,label = 'Ar/CF4 (99/1)')
-plt.plot(n_el_ArCF4_991_le, P_el_ArCF4_991_le, label = '0.2 (GeV) $\mu$')
-plt.plot(n_el_ArCF4_991_he, P_el_ArCF4_991_he, label = '8.0 (GeV) $\mu$')
+plt.plot(n_el_ArCF4_991_le, P_el_ArCF4_991_le, label = '0.2 (GeV) $\\mu$')
+plt.plot(n_el_ArCF4_991_he, P_el_ArCF4_991_he, label = '8.0 (GeV) $\\mu$')
 plt.plot(n_el_ArCH4_937, P_el_ArCH4_937, label = 'ArCH4')
 
 plt.xlabel('n electrons per cluster', fontsize = 25) ; plt.ylabel('P', fontsize = 25)
