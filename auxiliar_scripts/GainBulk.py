@@ -6,26 +6,39 @@ Created on Mon Oct  9 13:46:30 2023
 """
 
 import os
+print('Running...')
+os.chdir('../')
+
 from Alpha_track_simulator import*
 import tifffile
 from optical_gain import*
+from PIL import Image
+#Inputs
 
+rebin = '12x12_test'                                                             #based on experimental settings
+exposition_time = 1 #s                                                       #based on experimental settings
+path_optData = 'alpha_generator/setup_params/'                                 #optical parameters stored in a .txt file
+#folder = 'tiffs/opt gain/optical_gain_10-07-24/fr4 on 2/1 s/'#+ str(exposition_time) +' s/'          #images location --> all stored in one folder
+folder = 'tiffs/July24/new set data/highgain_1structure/12x12/100ms/'                           
 
-rebin='12x12'                                                                  #according to image readout
-exposition_time=10 #s                                                          #according to image readout
-path='C:/Users/usuario/Desktop/PRACTICAS - IGFAE/IGFAE - GASEOUS DETECTORS/AnalysisFramework/ImageAnalysis/alpha_generator/' #main directory
-folder='tiffs/Oct_run/10 seconds/1_st_GM_on/'                                                #images location
+datos = pd.read_csv( path_optData + 'datos' + rebin + '.csv' )
+os.chdir('alpha_generator/')
 
-
-datos='datos'+rebin+'.csv'                                                     #set-up data readout
-datos=pd.read_csv(path+datos)
-
-tiff_files=[f for f in os.listdir(path+folder) if f.endswith('.tiff')]         #select speciffic format for images
-
-
-for file in tiff_files:
+tiff_files = [f for f in os.listdir(folder) if f.endswith('.tiff')]            #select speciffic format for images (.tiff)
+print('Exp time:\t{:.2f} (s)'.format(exposition_time))
+print('Rebinning:\t{}'.format(rebin))
+print('-'*50)
+gain_list = []
+for file in tiff_files:                                                        #iteration over each file
     
-    cameraImage=data_image(path+folder,file)
-    print('file: ', file)
-    cameraImage.gain(qeff=float(datos['qeff']),geomeff=float(datos['geomeff']),T=float(datos['T']), reduc_fact=1, exp_time=exposition_time)
-    print('\n')
+    cameraImage = data_image(folder + file)
+    print('File: ', file)
+    
+    gain_list.append(cameraImage.gain(qeff = float(datos['qeff']),
+                     geomeff = float(datos['geomeff']),
+                     T = float(datos['T']),  
+                     exp_time = exposition_time))
+    print('-'*50)
+
+meanagain = np.mean(gain_list)
+print('Avg Gain:\t', meanagain)

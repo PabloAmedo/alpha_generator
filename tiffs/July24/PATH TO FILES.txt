@@ -1,0 +1,5 @@
+C:\Users\diego\RareEventsGroup Dropbox\HOME_RareEventsGroup\ULTIMATE\1TPC\Data\20240716\fr4_acrylic1950_transfer600\c-1136_r-128_acground_aa1950_fc2250_fa3160 ---> SAME CODNITIONS DIFF EXP TIMES
+
+C:\Users\diego\RareEventsGroup Dropbox\HOME_RareEventsGroup\ULTIMATE\1TPC\Data\20240716\acrylic_only\c-1136_r-128_acground_aa1880 -- LOW GAIN WO FR4 (ACRY ONLY)
+
+C:\Users\diego\RareEventsGroup Dropbox\HOME_RareEventsGroup\ULTIMATE\1TPC\Data\20240716\acrylic_only\c-1136_r-128_acground_aa1960 -- HIGH GAIN ACRY ONLY (LONG EXP)

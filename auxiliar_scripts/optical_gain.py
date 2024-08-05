@@ -18,12 +18,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-
 class data_image():
     
     '''This class loads an image and plot it'''
     
-    def __init__(self,file, path=None,pie=100):
+    def __init__(self,file, path=None,pie = 100):
         if path != None:
             self.image = Image.open(path+file)
         else:
@@ -31,17 +30,16 @@ class data_image():
         self.data  = np.array(self.image)
         self.data_plot = np.zeros(np.shape(self.data)[1])
         
-        
         # Quitamos el ruido electrónico
         # for i in range(np.shape(self.data)[0]):
         #     for j in range(np.shape(self.data)[1]):
         #         if self.data[i,j] < pie:
         #             self.data[i,j] = 0
         #         else:
-        #             self.data[i,j] = self.data[i,j]-pie
+        #             self.data[i,j] = self.data[i,j] - pie
         #-------------------------------------------------
-        self.data[self.data<pie]=0
-        self.data[self.data>=pie]-=pie     
+        self.data[self.data < pie] = 0
+        self.data[self.data >= pie] -= pie     
         #-------------------------------------------------                    
         '''Quitamos el ruido electrónico en la propia inicialización
         de la imagen, en caso de no querer hacerlo simplemente pie=0
@@ -56,12 +54,12 @@ class data_image():
         # for i in range(np.shape(self.data)[0]):
         #     self.data_plot = self.data_plot + self.data[i,:]
         #-------------------------------------------------
-        self.data_to_plot_x = np.sum(self.data,axis=0)                          #Valores acumulados para cada pix en x
+        self.data_to_plot_x = np.sum(self.data, axis = 0)                          #Valores acumulados para cada pix en x
         #-------------------------------------------------
 
         # Centramos el eje x
-        self.x = np.arange(0,len(self.data_to_plot_x),1) - (np.where(self.data_to_plot_x==max(self.data_to_plot_x)))[0][0]
-        self.x = self.x/cal
+        self.x = np.arange(0,len(self.data_to_plot_x),1) - (np.where(self.data_to_plot_x == max(self.data_to_plot_x)))[0][0]
+        self.x = self.x / cal
 
 
         plt.figure(figsize=(10,6),dpi=120)
@@ -93,38 +91,43 @@ class data_image():
         plt.legend(loc='best')
     
       
-    def gain(self,qeff=1,geomeff=1,T=1,E=5.5,W=25.7e-6,A=500,reduc_fact=1, exp_time=1):
-        
+    def gain(self,qeff=1,geomeff=1,T=1,E=5.5,W=25.7e-6,A=500, exp_time=1):
+    
         '''
-        Aquí obtenemos la ganancia óptica
+        Calculation of the optical gain given a set of data and the optical 
+        parameters and time exposure.
         '''           
-        
-        if qeff==1:
-            self.data = self.data
-        else:
-            self.data = self.data/qeff
-    
-        if T==1:
-            self.data = self.data
-        else:
-            self.data = self.data/T
-
-        if geomeff==1:
-            self.data = self.data
-        else:
-            self.data = self.data/geomeff
-    
-        # Multiplicamos por el factor de ganancia de la cámara
-        self.data = self.data*1.32                                             #ESTE FACTOR E SEMPRE O MESMO ???
-
-
+        self.data = self.data / qeff / geomeff / T
+        #ADU to ph
+        self.data = self.data * 1.32                                           # 1.32 is the camera gain
         self.total_photons = np.sum(self.data)
-        #print('El número total de fotones es de %f \t' %np.sum(self.total_photons))
-
-        self.electrons = exp_time * reduc_fact * A * E / W
-        #print('El número total de e- primrarios es de %f \t' %np.sum(self.electrons))
+        #Number of e- produced for the given exp time
+        self.electrons = exp_time * A * E / W
         
         self.gain = self.total_photons/self.electrons
-        print('Gain: %.3f \t'%self.gain)
+        print('Gain: %.3e \t'%self.gain)
+        
+        return self.gain
 
+def gainFunc(data, qeff=1,geomeff=1,T=1,E=5.5,W=25.7e-6,A=500, exp_time=1, base = 100):
+    
+    '''
+    Calculation of the optical gain given a set of data and the optical 
+    parameters and time exposure.
+    '''  
+    #Remove 100 ADU baseline
+    data[data < base] = 0
+    data[data >= base] -= base
+    #Convert to photons --> 1.32 is the gain from the camera (see manual)
+    data = data * 1.32 
+    #Correct for the optical parameters
+    data = data / qeff /geomeff / T
+    total_photons = np.sum(data)
+    #Total number of e* produced for the time exposure
+    electrons = exp_time * A * E / W
+    
+    gain = total_photons / electrons
+    print('Gain: %.3e \t'%gain)
+    
+    return gain
         

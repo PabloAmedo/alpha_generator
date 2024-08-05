@@ -11,6 +11,17 @@ import os
 os.chdir('../')
 # CALCULATION OF CLUSTERS/MM 
 
+def load_cd(path):
+    data_S         =       np.loadtxt( path, skiprows=2, delimiter=' ')
+    pm_S_, dNdx_S_ =       np.split(data_S, 2, axis = 1)                       #pm  ->  p/m ; 
+    pm_S_ = pm_S_ * 1e-8
+    pm_S = [] ; dNdx_S = []
+    for a, b in zip(pm_S_, dNdx_S_):
+        pm_S.append(float(a))
+        dNdx_S.append(float(b))
+        
+    return pm_S, dNdx_S
+
 def dNdx(Energy, mass,  Wi = 26.4, data = None):
     
     """
@@ -26,20 +37,38 @@ def dNdx(Energy, mass,  Wi = 26.4, data = None):
     #Load data scanned from paper
     #data_S         =       np.loadtxt('alpha_generator/data/' + data, delimiter=';')  #_S  ->  ref to Santovetti's data
     print(os.getcwd())
-    data_S         =       np.loadtxt('data/cluster_densities/ArCF4cd_muon.txt', skiprows=2, delimiter=' ')
-    pm_S_, dNdx_S_ =       np.split(data_S, 2, axis = 1)                       #pm  ->  p/m ; 
-    pm_S_ = pm_S_ * 1e-8
-    pm_S = [] ; dNdx_S = []
-    for a, b in zip(pm_S_, dNdx_S_):
-        pm_S.append(float(a))
-        dNdx_S.append(float(b))
-        
+    pm_mu, dNdx_mu = load_cd('data/cluster_densities/ArCF4cd_muon.txt')
+    pm_pi, dNdx_pi = load_cd('data/cluster_densities/ArCF4cd_pion.txt')
+    pm_k, dNdx_k = load_cd('data/cluster_densities/ArCF4cd_kaon.txt')
+    pm_p, dNdx_p = load_cd('data/cluster_densities/ArCF4cd_proton.txt')
+    
+    
     #Momentum calculation
     momentum = np.sqrt((Energy + mass)**2 - mass**2)                           #mass units
     pm = momentum / mass
+    """
+    #Define interpolators
+    muon_interpolator = interp1d(pm_mu, dNdx_mu, kind='linear', fill_value='extrapolate') #slinear
+    pion_interpolator = interp1d(pm_pi, dNdx_pi, kind='linear', fill_value='extrapolate') #slinear
+    kaon_interpolator = interp1d(pm_k, dNdx_k, kind='linear', fill_value='extrapolate') #slinear
+    proton_interpolator = interp1d(pm_p, dNdx_p, kind='linear', fill_value='extrapolate') #slinear
+    """
+    muon_interpolator = interp1d(pm_mu, dNdx_mu, kind='linear', fill_value='extrapolate') #slinear
+    extrapolator = interp1d(pm_mu, dNdx_mu, kind='zero', fill_value='extrapolate')
+    """
+    if mass == 105.66:
+        dNdx_extrapolated = muon_interpolator(pm)
+    elif mass == 139.57:
+        dNdx_extrapolated = pion_interpolator(pm)
+    elif mass == 493.7:
+        dNdx_extrapolated = kaon_interpolator(pm)
+    elif mass == 938.27:
+        dNdx_extrapolated = proton_interpolator(pm)
+    else:
+        dNdx_extrapolated = extrapolator(pm)
+    """
     
-    data_interpolator = interp1d(pm_S, dNdx_S, kind='linear', fill_value='extrapolate') #slinear
-    extrapolator = interp1d(pm_S, dNdx_S, kind='zero', fill_value='extrapolate')
+    data_interpolator = interp1d(pm_mu, dNdx_mu, kind='linear', fill_value='extrapolate') #slinear
     pmDataRange = pm[pm < 1000 ]
     pmOverDataRange = pm[pm >= 1000 ]
     
@@ -49,7 +78,6 @@ def dNdx(Energy, mass,  Wi = 26.4, data = None):
         dNdx_extrapolated = extrapolator(pm)
     else:
         dNdx_extrapolated = extrapolator(pm)
-    
     #TESTING
     #print('p\t=\t', momentum)
     #print('p/m\t=\t', pm)

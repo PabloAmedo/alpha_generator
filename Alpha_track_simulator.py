@@ -65,7 +65,7 @@ class Source:
     
     """This is the source class. It includes all the relevant information about the source"""
     
-    def __init__(self,rate=500,energy=5.5,radius=0.35,M=933,range_alpha=4.8, We=25.7e-6):
+    def __init__(self,rate=500,energy=5.5,radius=0.35,M=933,range_alpha=4.8, We=25.7e-6, red_fact = 1):
         
         self.rate=rate #In Hz
         
@@ -78,10 +78,11 @@ class Source:
         self.M=M
         self.z=2
         self.n_e=int(energy/We)                                  #Add We at some point
+        self.red_fact = red_fact
     
-    def produce_alpha(self,n,store,ionization_profile,phi_in=None,ath_in=None,theta=None, n_electrons=214007): 
+    def produce_alpha(self,n,store,ionization_profile, n_electrons= None,phi_in=None,ath_in=None,theta=None): 
         """This method produces an alpha track from the alpha_tracks class"""        
-        
+        n_electrons = int(214007/self.red_fact)
         if ionization_profile=='Bragg':
             self.x,self.Sp,self.acum=bragg_peak(self.energy,self.range_alpha)
         else:
@@ -105,7 +106,9 @@ class Source:
             x0=np.cos(theta)*self.radius*np.random.rand()
             y0=np.sin(theta)*self.radius*np.random.rand()
                  
-            alpha=Alphas_tracks(x=self.x,acum=self.acum,range_alpha=self.range_alpha,phi=phi,ath=ath,x0=x0,y0=y0,ionization_profile=ionization_profile, n_electrons=n_electrons)
+            alpha=Alphas_tracks(x=self.x,acum=self.acum,range_alpha=self.range_alpha,
+                                phi=phi,ath=ath,x0=x0,y0=y0,ionization_profile=ionization_profile, 
+                                n_electrons=n_electrons)
             store.append(alpha)
             
         return store
@@ -294,7 +297,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 
                 
             elif self.gas == 'ArCF4_99-1_01mm':#from HEED (01mm to remove the XR propagation)
-                data_ArCF4_9901 = np.loadtxt('data/clusters_distributions/ArCF4-99-1-10bar_0.1x0.1x0.1mmCell_8GeVmuons_normalized.txt' , skiprows = 1)
+                data_ArCF4_9901 = np.loadtxt('alpha_generator/data/clusters_distributions/ArCF4-99-1-10bar_0.1x0.1x0.1mmCell_8GeVmuons_normalized.txt' , skiprows = 1)
                 n_el, P_el, _ = np.split(data_ArCF4_9901, 3, axis = 1)
                 P_el = P_el.flatten() ; n_el = n_el.flatten()
                 probabilities_above = ClusterParametrizationAr(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
@@ -435,7 +438,7 @@ class muon_tracks(muon_generator):
                 # Calculate the transverse diffusion on the z-y plane
                 if self.spread!= 0:
                     #Now we need to draw the number from the gaussian distribution
-                    pos = np.random.multivariate_normal((0,0), cov=self.spread*np.identity(2),size=1)
+                    pos = np.random.multivariate_normal((0,0), cov=self.spread**2 * np.identity(2),size=1)
                     
                     self.electron_positions_diff[aux_electrons_total,0]+=pos[:,0]
                     
@@ -470,8 +473,8 @@ class Alphas_tracks(Source):
     """This is the alpha class. It contains all the relevant information about the alpha track,
     like the ionization profile, positions of electrons, etc"""
     
-    def __init__(self,x,acum,range_alpha,phi=None,ath=None,x0=None,y0=None,spread=0,ionization_profile="Flat", n_electrons=int(5.5/25.7e-6)):
-        
+    def __init__(self,x,acum,range_alpha,phi=None,ath=None,x0=None,y0=None,spread=0,ionization_profile="Flat", n_electrons=int(5.5/25.7e-6)): #FIXME
+        super().__init__()
         self.ionization=ionization_profile
         self.X=x
         self.acum=acum            #si no da error
@@ -512,7 +515,7 @@ class Alphas_tracks(Source):
         #Number of electrons in a track
         # self.n_electrons=source.energy/Gas.I
         # self.n_electrons=50
-        self.n_electrons=n_electrons
+        self.n_electrons = n_electrons / self.red_fact
         
         #Storage of electrons (x,y) positions
         self.electron_positions=np.zeros([n_electrons,2]) # coordenadas [x,y] para los 50 electrones
@@ -532,7 +535,7 @@ class Alphas_tracks(Source):
         
         #Draw a number from the ionization profile distribution
         #self.ionization_profile=1
-        for i in range(self.n_electrons):
+        for i in range(int(self.n_electrons)):
             
             #Get the radial position of the electron alongside the track
             if self.ionization=='Bragg':
@@ -569,7 +572,7 @@ class Alphas_tracks(Source):
             index=0;other_index=1
             
         #Iterate over the electrons
-        for j in range(self.n_electrons):
+        for j in range(int(self.n_electrons)):
             #Check if they are whitin our current 
             if min_var<self.electron_positions_diff[j,index]<=max_var:
                 array_to_store.append(self.electron_positions_diff[j,other_index])
@@ -630,7 +633,7 @@ class Noise():
         #temperature
         self.dark_current=dark_current
     
-    def add_noise(self,exposition_time,Hist2d,sigma=5.7):
+    def add_noise(self,exposition_time, Hist2d, sigma=5.7):
         
         """This method adds noise to each pixel of a 2D histogram as a function of the
         electronic noise and the exposure time"""
@@ -672,25 +675,24 @@ class Image_2D():
         
         This object will be exported and loaded by our analysis framework"""
         
-    def __init__(self,track_list,hist_args={"bins":10},QE=1,GE=1,Tp=1,gain=1,ph_poiss=False, pixel_size = 0.2):
+    def __init__(self,track_list,hist_args = {"bins":100}, QE = 1, GE = 1, Tp = 1, gain = 1, ph_poiss = False, pixel_size = 0.2):
         
         #List of tracks
-        self.track_list=track_list
+        self.track_list = track_list
         
         #Get a list of all electron positions in all tracks
-        #self.x_pos = np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,0] for i in range(len(track_list))]))
-        #self.y_pos = np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,1] for i in range(len(track_list))]))
+        self.x_pos = np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,0] for i in range(len(track_list))]))
+        self.y_pos = np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,1] for i in range(len(track_list))]))
         
-        self.x_pos = np.concatenate([track_list[i].electron_positions_diff[:,0] for i in range(len(track_list))])
-        self.y_pos = np.concatenate([track_list[i].electron_positions_diff[:,1] for i in range(len(track_list))])
-        
+        #self.x_pos = np.concatenate([track_list[i].electron_positions_diff[:,0] for i in range(len(track_list))])
+        #self.y_pos = np.concatenate([track_list[i].electron_positions_diff[:,1] for i in range(len(track_list))])
         
         #Get a list of all the true electron's positions in all tracks
-        #self.x_pos_true=np.ndarray.flatten(np.asarray([track_list[i].electron_positions[:,0] for i in range(len(track_list))]))
-        #self.y_pos_true=np.ndarray.flatten(np.asarray([track_list[i].electron_positions[:,1] for i in range(len(track_list))]))
+        self.x_pos_true = np.ndarray.flatten(np.asarray([track_list[i].electron_positions[:,0] for i in range(len(track_list))]))
+        self.y_pos_true = np.ndarray.flatten(np.asarray([track_list[i].electron_positions[:,1] for i in range(len(track_list))]))
         
-        self.x_pos_true = np.concatenate([track_list[i].electron_positions[:,0] for i in range(len(track_list))])
-        self.y_pos_true = np.concatenate([track_list[i].electron_positions[:,1] for i in range(len(track_list))])
+        #self.x_pos_true = np.concatenate([track_list[i].electron_positions[:,0] for i in range(len(track_list))])
+        #self.y_pos_true = np.concatenate([track_list[i].electron_positions[:,1] for i in range(len(track_list))])
         
         
         
@@ -699,7 +701,7 @@ class Image_2D():
         self.GE=GE
         self.Tp=Tp
         self.gain=gain    
-    
+        """
         #hist_args['bins'] are the TOTAL number of pixels per axis for the entire detector.
         #We have to select the number of pixels involved in the tracking for smaller tracks.
         tlen_x = []
@@ -713,7 +715,13 @@ class Image_2D():
         binsx = int(track_length_x / pixel_size)
         binsy = int(track_length_y / pixel_size)
         
-        hist_args['bins'] = (binsx, binsy)
+        hist_args['bins'] = (abs(int(binsx)), abs(int(binsy)))
+        #Get the 2d hist for all the electrons and the edges from the list of tracks.
+        #Extra arguments can be passed to the 2D numpy histogram function
+        self.Hist2D_e,self.x_edges,self.y_edges=np.histogram2d(x = self.x_pos, y = self.y_pos, bins = (abs(int(binsx)), abs(int(binsy))))
+        #Since numpy inverts the (y,x) histogram, invert it again
+        self.Hist2D_e=self.Hist2D_e.T"""
+        
         #Get the 2d hist for all the electrons and the edges from the list of tracks.
         #Extra arguments can be passed to the 2D numpy histogram function
         self.Hist2D_e,self.x_edges,self.y_edges=np.histogram2d(x=self.x_pos,y=self.y_pos,**hist_args)
@@ -778,24 +786,24 @@ class Image_2D():
             
         return fig
             
-    def plot_hist(self,fig_in=None,axis_list_in=None,noise_object=None,exposition_time=0):
+    def plot_hist(self, fig_in = None, axis_list_in = None, noise_object = None, exposition_time = 0):
         """This simply plots the 2D histogram"""
     
-        H,yedges,xedges=self.Hist2D,self.y_edges,self.x_edges
+        H, yedges, xedges = self.Hist2D, self.y_edges, self.x_edges
         
         #If a figure and axis are provided, use them. Otherwise come up with our own
-        if fig_in==None or axis_list_in==None:
+        if fig_in == None or axis_list_in == None:
             #Create a figure
             fig, (ax1,ax2) = plt.subplots(ncols=2)
             
         else:
-            fig=fig_in
-            ax1=axis_list_in[0]
-            ax2=axis_list_in[1]
+            fig = fig_in
+            ax1 = axis_list_in[0]
+            ax2 = axis_list_in[1]
             
             
         #Plot it
-        ax1.pcolormesh(xedges, yedges, H, cmap='rainbow',vmin = np.min(H), vmax = np.max(H))
+        ax1.pcolormesh(xedges, yedges, H, cmap = 'rainbow',vmin = np.min(H), vmax = np.max(H))
         
         #ax1.plot(x, 2*np.log(x), 'k-')
         
@@ -824,16 +832,22 @@ class Image_2D():
         
         return fig
     
-    def plot_x(self):
-        electron_cut=[];variable_cut='x';other_variable='y'
+    def plot_x(self, variable_cut = 'x', min_var = -0.5, max_var = 0.5):
+        electron_cut = []
+        
+        if variable_cut == 'x':
+            other_variable = 'y'
+        else:
+            other_variable = 'x'
+            
         for track in self.track_list:
-            electron_cut=track.select(variable_cut,min_var=-0.5,max_var=0.5,array_to_store=electron_cut)
+            electron_cut = track.select(variable_cut, min_var = min_var, max_var = max_var, array_to_store = electron_cut)
         
-        le_hist=np.histogram(electron_cut,bins=100)
-        self.le_hist=le_hist
-        self.electron_cut=electron_cut
+        le_hist = np.histogram(electron_cut, bins = 100)
+        self.le_hist = le_hist
+        self.electron_cut = electron_cut
         
-        return (self.le_hist,self.electron_cut)
+        return (self.le_hist, self.electron_cut)
     
 
 ###############################################################################

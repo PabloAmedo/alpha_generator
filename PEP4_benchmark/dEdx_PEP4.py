@@ -31,28 +31,29 @@ def Momentum(energy_list, mass):
         p_list.append(np.sqrt((energy + mass)**2 - mass**2))
         
     return np.array(p_list)
-os.chdir('alpha_generator/')
 
 #INPUTS========================================================================
+
+name            =       'PEP4_20k'
+file_tosave     =       open('alpha_generator/PEP4_benchmark/simulated_data/'+ name +'.txt', 'x');         
+file_tosave.write('\nINPUTS\n'+'='*50+'\n')  
+
 gas             =       'PEP4'
 n_cl_cm         =       False #29.6933                                         #from HEED simulations
-name            =       'PEP4_clust'
-file_tosave     =       open('PEP4_benchmark/simulated_data/'+ name +'.txt', 'x');         
-file_tosave.write('\nINPUTS\n'+'='*50+'\n')  
-energy_list     =       np.logspace(1, 5, 10000) ;          file_tosave.write('Energy range:\t{} - {} ({}) (MeV)\n'.format(energy_list[0], energy_list[-1], len(energy_list)))
-dimensions      =       [100,100,0];                        file_tosave.write('Dimensions:\t{} (cm)\n'.format(dimensions)) #We are considering 2.5 (m) length 
-masses          =       [0.511, 105.66, 139.57, 493.7, 938.27];    file_tosave.write('Masses:\t\t{} (MeV)\n'.format(masses))  #(MeV/c2)  [muon, pi, k, proton]
-Pressure        =       8.5;                                 file_tosave.write('Pressure:\t{} (bar)\n'.format(Pressure))#bar
-sampling_size   =       0.4;                                file_tosave.write('Sampling size:\t{} (cm)\n\n'.format(sampling_size)) #cm (2 mm) ; #4 mm in PEP-4
+
+energy_list     =       np.logspace(1, 5, 10000) ;                  file_tosave.write('Energy range:\t{} - {} ({}) (MeV)\n'.format(energy_list[0], energy_list[-1], len(energy_list)))
+dimensions      =       [100,100,0];                                file_tosave.write('Dimensions:\t{} (cm)\n'.format(dimensions)) #We are considering 2.5 (m) length 
+masses          =       [0.511, 105.66, 139.57, 493.7, 938.27];     file_tosave.write('Masses:\t\t{} (MeV)\n'.format(masses))  #(MeV/c2)  [muon, pi, k, proton]
+Pressure        =       8.5;                                        file_tosave.write('Pressure:\t{} (bar)\n'.format(Pressure))#bar
+sampling_size   =       0.75;                                        file_tosave.write('Sampling size:\t{} (cm)\n\n'.format(sampling_size)) #cm (2 mm) ; #4 mm in PEP-4
+
+binsx           =       int(150*2)
+binsy           =       int(75*2);                                  file_tosave.write('Bins(x,y):\t{}\n'.format([binsx, binsy]))
+
+n_particles     =       20000;                                      file_tosave.write('SIMULATED EVENTS:\t{}\n'.format(n_particles))
 
 dEdx            =       []
 momentum        =       []
-binsx           =       int(150*2)
-binsy           =       int(75*2);                          file_tosave.write('Bins(x,y):\t{}\n'.format([binsx, binsy]))
-
-n_particles     =       30000;                                file_tosave.write('SIMULATED EVENTS:\t{}\n'.format(n_particles))
-
-
 
 
 file_tosave.write('\n' + '='*50 + '\n')
@@ -70,11 +71,11 @@ p_pi = Momentum(energy_list_pi, masses[2])
 p_k = Momentum(energy_list_k, masses[3]) 
 p_p = Momentum(energy_list_p, masses[4]) 
 
-p_resolution_e = np.loadtxt('data/p_resolution/p_electron_res', comments='#') / 100
-p_resolution_mu = np.loadtxt('data/p_resolution/p_muon_res', comments='#') / 100
-p_resolution_pi = np.loadtxt('data/p_resolution/p_pion_res', comments='#') / 100
-p_resolution_k = np.loadtxt('data/p_resolution/p_kaon_res', comments='#') / 100
-p_resolution_p = np.loadtxt('data/p_resolution/p_proton_res', comments='#') / 100
+p_resolution_e = np.loadtxt('alpha_generator/data/p_resolution/p_electron_res', comments='#') / 100
+p_resolution_mu = np.loadtxt('alpha_generator/data/p_resolution/p_muon_res', comments='#') / 100
+p_resolution_pi = np.loadtxt('alpha_generator/data/p_resolution/p_pion_res', comments='#') / 100
+p_resolution_k = np.loadtxt('alpha_generator/data/p_resolution/p_kaon_res', comments='#') / 100
+p_resolution_p = np.loadtxt('alpha_generator/data/p_resolution/p_proton_res', comments='#') / 100
 
 momentum_e = np.array((p_e, p_resolution_e, energy_list)).T
 momentum_muon = np.array((p_mu, p_resolution_mu, energy_list_muon)).T
