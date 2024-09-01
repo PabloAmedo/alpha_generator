@@ -343,7 +343,35 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 
                 n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
                                           p = probs_final / probs_final.sum())
-            
+                
+            elif self.gas == 'nano-N2':
+                #n_cl_cm = 2 #DELETE
+                #n_cl_avg = np.random.poisson(lam = tr_len * n_cl_cm)
+                data_nanoN2 = np.loadtxt('nanodosimetry/cluster_size/nitrogen-10bar_0.1x0.1x0.1mmCell_2.5GeVmuons_normalized.txt')
+                n_el, P_el, _ = np.split(data_nanoN2, 3, axis = 1)
+                P_el = P_el.flatten() / 100 ; n_el = n_el.flatten()
+                #probabilities_above = ClusterParametrizationGeneral(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
+                probs_final =P_el[:e_cut] # np.concatenate((P_el, probabilities_above))
+                
+                print('a=', n_el[:e_cut])
+                print('p=', len(probs_final / probs_final.sum()))
+                n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
+                                          p = probs_final / probs_final.sum())
+                
+            elif self.gas == 'nano-C3H8':
+                
+                n_cl_avg = np.random.poisson(lam = tr_len * n_cl_cm * 2.65)
+                data_nanoC3H8 = np.loadtxt('nanodosimetry/cluster_size/propane-10bar_0.1x0.1x0.1mmCell_2.5GeVmuons_normalized.txt')
+                n_el, P_el, _ = np.split(data_nanoC3H8, 3, axis = 1)
+                P_el = P_el.flatten() / 100 ; n_el = n_el.flatten()
+                #probabilities_above = ClusterParametrizationGeneral(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
+                probs_final = P_el[:e_cut] # np.concatenate((P_el, probabilities_above))
+                
+                print('a=',e_cut)
+                print('p=', len(probs_final))# / probs_final.sum()))
+                n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
+                                          p = probs_final / probs_final.sum())
+                
             #Calculation of initial and final position ---> Improve to 3D
             z0 = tr_len * np.sin(theta0) * np.cos(phi0)
             y0 = y0
@@ -627,7 +655,7 @@ class Noise():
     
     """
     
-    def __init__(self,dark_current=190):
+    def __init__(self,dark_current=109):
         
         #Dark_current (electrons/s) of the camera is 190 e/s. This depends exponentially on the
         #temperature
@@ -675,7 +703,7 @@ class Image_2D():
         
         This object will be exported and loaded by our analysis framework"""
         
-    def __init__(self,track_list,hist_args = {"bins":100}, QE = 1, GE = 1, Tp = 1, gain = 1, ph_poiss = False, pixel_size = 0.2):
+    def __init__(self,track_list, hist_args = {"bins":100}, QE = 1, GE = 1, Tp = 1, gain = 1, ph_poiss = False, pixel_size = 0.2):
         
         #List of tracks
         self.track_list = track_list
@@ -697,10 +725,10 @@ class Image_2D():
         
         
         #Define the quantum efficiency, the geometrical efficiency, the transparency and the gain
-        self.QE=QE
-        self.GE=GE
-        self.Tp=Tp
-        self.gain=gain    
+        self.QE = QE
+        self.GE = GE
+        self.Tp = Tp
+        self.gain = gain    
         """
         #hist_args['bins'] are the TOTAL number of pixels per axis for the entire detector.
         #We have to select the number of pixels involved in the tracking for smaller tracks.
@@ -724,9 +752,9 @@ class Image_2D():
         
         #Get the 2d hist for all the electrons and the edges from the list of tracks.
         #Extra arguments can be passed to the 2D numpy histogram function
-        self.Hist2D_e,self.x_edges,self.y_edges=np.histogram2d(x=self.x_pos,y=self.y_pos,**hist_args)
+        self.Hist2D_e, self.x_edges, self.y_edges = np.histogram2d(x = self.x_pos, y = self.y_pos, **hist_args)
         #Since numpy inverts the (y,x) histogram, invert it again
-        self.Hist2D_e=self.Hist2D_e.T
+        self.Hist2D_e = self.Hist2D_e.T
         
         if ph_poiss==True:
             #We generate in each pixel a poisson distribution with lamda=nº of electrons in that

@@ -36,13 +36,13 @@ os.chdir('alpha_generator/')
 #INPUTS========================================================================
 gas             =       'PEP4'
 n_cl_cm         =       False #29.6933                                         #from HEED simulations
-name            =       'DELETE'
+name            =       'DELETEnano3'
 file_tosave     =       open('dEdx/simulated_data_lt/'+ name +'.txt', 'x');         
 file_tosave.write('\nINPUTS\n'+'='*50+'\n')  
 energy_list     =       np.logspace(1, 5, 10000) ;          file_tosave.write('Energy range:\t{} - {} ({}) (MeV)\n'.format(energy_list[0], energy_list[-1], len(energy_list)))
-dimensions      =       [100,100,0];                        file_tosave.write('Dimensions:\t{} (cm)\n'.format(dimensions)) #We are considering 2.5 (m) length 
+dimensions      =       [0.5,0.5,0];                        file_tosave.write('Dimensions:\t{} (cm)\n'.format(dimensions)) #We are considering 2.5 (m) length 
 masses          =       [0.511, 105.66, 139.57, 493.7, 938.27];    file_tosave.write('Masses:\t\t{} (MeV)\n'.format(masses))  #(MeV/c2)  [muon, pi, k, proton]
-Pressure        =       8.5;                                 file_tosave.write('Pressure:\t{} (bar)\n'.format(Pressure))#bar
+Pressure        =       0.001;                                 file_tosave.write('Pressure:\t{} (bar)\n'.format(Pressure))#bar
 sampling_size   =       0.75;                                file_tosave.write('Sampling size:\t{} (cm)\n\n'.format(sampling_size)) #cm (2 mm) ; #4 mm in PEP-4
 
 dEdx            =       []
@@ -50,7 +50,7 @@ momentum        =       []
 binsx           =       int(150*2)
 binsy           =       int(75*2);                          file_tosave.write('Bins(x,y):\t{}\n'.format([binsx, binsy]))
 
-n_particles     =       5;                                file_tosave.write('SIMULATED EVENTS:\t{}\n'.format(n_particles))
+n_particles     =       500;                                file_tosave.write('SIMULATED EVENTS:\t{}\n'.format(n_particles))
 
 EnergyCut_KaonProton = 2500
 

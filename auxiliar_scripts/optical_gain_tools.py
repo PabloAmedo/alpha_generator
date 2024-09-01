@@ -69,6 +69,7 @@ def ImageCut(geometry, image, vpix, hpix = 0, axis_cut = 'x', offcenter = None, 
     else:
         x_offcenter, y_offcenter = offcenter
         
+        
     if axis_cut == 'x':
         x, y, width, height = geometry
         
@@ -121,7 +122,7 @@ def ImageCut(geometry, image, vpix, hpix = 0, axis_cut = 'x', offcenter = None, 
         fig, ax = plt.subplots(1)
         a = ax.imshow(image, cmap = cmap)
         ax.add_patch(rect)
-        ax.vlines(width/2 + x_offcenter, 182.5, 0)
+        #ax.vlines(width/2 + x_offcenter, 182.5, 0)
         ax.tick_params(axis='both', which='major', labelsize = 18)
         fig.colorbar(a)
         if save == True:

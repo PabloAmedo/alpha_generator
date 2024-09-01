@@ -23,30 +23,32 @@ def load_cd(path):
         
     return pm_S, dNdx_S
 
-def dNdx(Energy, mass,  Wi = 26.4, data = None):
+def dNdx(Energy, mass,  Wi = 26.4, data = None, Pressure = 10):
     
     #Load data scanned from paper
     #data_S         =       np.loadtxt('alpha_generator/data/' + data, delimiter=';')  #_S  ->  ref to Santovetti's data
-    print(os.getcwd())
-    pm_mu, dNdx_mu = load_cd('data/cluster_densities/ArCF4cd_muon.txt')
-    pm_pi, dNdx_pi = load_cd('data/cluster_densities/ArCF4cd_pion.txt')
-    pm_k, dNdx_k = load_cd('data/cluster_densities/ArCF4cd_kaon.txt')
-    pm_p, dNdx_p = load_cd('data/cluster_densities/ArCF4cd_proton.txt')
+    #print(os.getcwd())
+    pm_mu, dNdx_mu = load_cd('nanodosimetry/cluster_densities/ClusterDensity_C3H8_1.00__0.00_Pressure_7600.00Torr_muon_.txt')
+    pm_pi, dNdx_pi = load_cd('nanodosimetry/cluster_densities/ClusterDensity_N2_1.00__0.00_Pressure_7600.00Torr_pion_.txt')
+    pm_k, dNdx_k = load_cd('nanodosimetry/cluster_densities/ClusterDensity_N2_1.00__0.00_Pressure_7600.00Torr_kaon_.txt')
+    pm_p, dNdx_p = load_cd('nanodosimetry/cluster_densities/ClusterDensity_N2_1.00__0.00_Pressure_7600.00Torr_proton_.txt')
     
     
     #Momentum calculation
     momentum = np.sqrt((Energy + mass)**2 - mass**2)                           #mass units
+    print('p=', momentum)
     pm = momentum / mass
+    print('pm=', pm)
 
-    muon_interpolator = interp1d(pm_mu, dNdx_mu, kind='linear', fill_value='extrapolate') #slinear
-    extrapolator = interp1d(pm_mu, dNdx_mu, kind='zero', fill_value='extrapolate')
-    
+    extrapolator = interp1d(pm_p, dNdx_p, kind='quadratic', fill_value='extrapolate')    
     data_interpolator = interp1d(pm_mu, dNdx_mu, kind='linear', fill_value='extrapolate') #slinear
-    pmDataRange = pm[pm < 1000 ]
-    pmOverDataRange = pm[pm >= 1000 ]
     
+    dNdx_extrapolated = extrapolator(pm)
+    
+    
+    """
     if pm < 500 and mass != 0.511:
-        dNdx_extrapolated = data_interpolator(pm)
+        dNdx_extrapolated = extrapolator(pm)
     elif pm < 500 and mass == 0.511:
         dNdx_extrapolated = extrapolator(pm)
     else:
@@ -55,8 +57,8 @@ def dNdx(Energy, mass,  Wi = 26.4, data = None):
     #print('p\t=\t', momentum)
     #print('p/m\t=\t', pm)
     print('N/cm\t=\t', dNdx_extrapolated/10)
-   
-    return dNdx_extrapolated/10
+   """
+    return dNdx_extrapolated / Pressure
 
 def Momentum(energy_list, mass):
     p_list = []

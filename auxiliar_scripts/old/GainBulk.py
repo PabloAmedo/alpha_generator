@@ -16,10 +16,10 @@ from PIL import Image
 #Inputs
 
 rebin = '12x12_test'                                                             #based on experimental settings
-exposition_time = 1 #s                                                       #based on experimental settings
+exposition_time = 100 #s                                                       #based on experimental settings
 path_optData = 'alpha_generator/setup_params/'                                 #optical parameters stored in a .txt file
 #folder = 'tiffs/opt gain/optical_gain_10-07-24/fr4 on 2/1 s/'#+ str(exposition_time) +' s/'          #images location --> all stored in one folder
-folder = 'tiffs/July24/new set data/highgain_1structure/12x12/100ms/'                           
+folder = '../Gain analysis/Data/July11th/driftscan/c-1800_r-900_acground_aa2000/100ms/'                           
 
 datos = pd.read_csv( path_optData + 'datos' + rebin + '.csv' )
 os.chdir('alpha_generator/')
