@@ -20,7 +20,12 @@ import warnings
 from scipy.optimize import OptimizeWarning
 #from matplotlib.colors import DivergingNorm
 warnings.filterwarnings("ignore",  category=OptimizeWarning)
+print(os.getcwd())
+os.chdir('alpha_generator/auxiliar_scripts/')
+from general_tools import *
+from dEdx_tools import *
 
+os.chdir('../../')
 start = time.time()
 print('Running...')
 
@@ -36,7 +41,7 @@ os.chdir('alpha_generator/')
 #INPUTS========================================================================
 gas             =       'PEP4'
 n_cl_cm         =       False #29.6933                                         #from HEED simulations
-name            =       'DELETEnano3'
+name            =       'DELETEnano30_1'
 file_tosave     =       open('dEdx/simulated_data_lt/'+ name +'.txt', 'x');         
 file_tosave.write('\nINPUTS\n'+'='*50+'\n')  
 energy_list     =       np.logspace(1, 5, 10000) ;          file_tosave.write('Energy range:\t{} - {} ({}) (MeV)\n'.format(energy_list[0], energy_list[-1], len(energy_list)))

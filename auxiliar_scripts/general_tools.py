@@ -12,6 +12,26 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 
+#DEFINING SOME CONVERSION CONSTANTS
+deg_to_rad =  np.pi / 180
+
+
+## FLUCTUATIONS IN e-'s READOUT
+def statistics_avalanche(e_per_cluster):
+    nClusters = len(e_per_cluster)
+    detectedElectrons   = []
+    
+    for i in range(nClusters):
+        acum = 0
+        for _ in range(int(e_per_cluster[i])):
+            acum = acum + np.random.exponential(scale = 1 )
+        detectedElectrons.append(acum) #FIXME
+
+    return np.array(detectedElectrons)
+
+
+
+#GENERAL FUNCTIONS
 def generate_gif(folder, time_step = 0.25, path = None, ext = '.tiff', nametosave = None, save = False):
     
     if path == None:
@@ -35,42 +55,16 @@ def generate_gif(folder, time_step = 0.25, path = None, ext = '.tiff', nametosav
     
     return images
 
-def cmap_change(image, cmap, pct_max = 0.5):
+def cmap_change(image, cmap, pct_max = 1, title = None):
     
     img_array = np.array(image)
     
     fig = plt.figure()
-    plt.title('{}'.format(cmap), fontsize = 25)
+    if title != None:
+        plt.title('{}'.format(title), fontsize = 25)
     img = plt.imshow(image, cmap = cmap, vmax = np.max(img_array) * pct_max)
     plt.colorbar(img)
     plt.tick_params(axis='both', which='major', labelsize = 18)
     plt.xlabel('X (px)', fontsize = 20)
     plt.ylabel('Y (px)', fontsize = 20)
     fig.tight_layout()
-    
-
-def posicion_segundo_maximo(arr):
-    # Verificar si hay al menos dos elementos únicos
-    if len(arr) < 2:
-        return None  # No hay segundo máximo
-
-    # Inicializar el máximo y segundo máximo
-    maximo = segundo_maximo = float('-inf')
-    pos_maximo = pos_segundo_maximo = -1
-
-    # Encontrar el máximo
-    for i, num in enumerate(arr):
-        if num > maximo:
-            maximo = num
-            pos_maximo = i
-
-    # Encontrar el segundo máximo
-    for i, num in enumerate(arr):
-        if num > segundo_maximo and num < maximo:
-            segundo_maximo = num
-            pos_segundo_maximo = i
-
-    if segundo_maximo == float('-inf'):
-        return None  # No hay segundo máximo (por ejemplo, si todos los elementos son iguales)
-
-    return pos_segundo_maximo

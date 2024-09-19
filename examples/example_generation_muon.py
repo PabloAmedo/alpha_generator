@@ -20,18 +20,18 @@ def Momentum(energy, mass):
     return np.array(p_list)
 
 #INPUTS========================================================================
-n_tracks    =   3
+n_tracks    =   10
 P           =   10                                                             #bar
 #y0          =   10
 #theta0      =   50
-E           =   405.5                                                        #E = 4000 [MeV] (CR)
+E           =   2500                                                          #E = 4000 [MeV] (CR)
 dimensions  =   [250,250,250]
 mass        =   105.66
 gas         =   'ArCF4_99-1_01mm'
 e_cut       =   10000
 
 px_size     =   0.2
-sigma_diff  =   0.02
+sigma_diff  =   0.25
 sigma_PSF   =   0
 line        =   False
 

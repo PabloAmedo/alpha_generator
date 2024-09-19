@@ -15,11 +15,14 @@ import matplotlib.patches as patches
 import matplotlib.colors as mcolors
 
 
-def BaselineSubstraction(image, baseline = 100):                               #This is good, maybe no need a func
-    image = np.array(image)
+def BaselineSubstraction(image, baseline = 100):                               
+    image = np.array(image, dtype = float)
+    """
     image[image < baseline] = 0
     image[image >= baseline] -= baseline
-    image = Image.fromarray(image)
+    """
+    image = image - float(baseline)
+    #image = Image.fromarray(image)
     
     return image
 

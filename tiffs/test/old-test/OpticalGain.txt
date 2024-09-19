@@ -1,0 +1,8 @@
+INPUTS
+Exposure time:		100
+Thinning factor:	10
+
+/old-test/1.tiff	2510.568673920761
+/old-test/2.tiff	700.4001308277998
+
+Average gain:		1605.4844023742803

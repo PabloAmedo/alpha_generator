@@ -38,6 +38,7 @@ for path in add_to_path:
         sys.path.append(path)
 
 from dEdx_tools import *
+from general_tools import *
 from bragg_distribution import *
 
 ###############################################################################
@@ -161,7 +162,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
         
     """
     
-    def __init__(self, energy = 5e3,  geometry = [1,1,1], mass = 105.66, gas = 'Argon', pressure = 1):
+    def __init__(self, energy = 5e3,  geometry = [1,1,1], mass = 105.66, gas = 'Argon', pressure = 1, red_fact = 1):
         #Define the initial conditions here
         self.energy = energy                                                   #MeV
         self.xmax, self.ymax, self.zmax = geometry
@@ -224,7 +225,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
             #n_cl_cm = self.P * dNdx(self.energy, self.mass)
             #print('n_cl_cm', n_cl_cm)
             
-            n_cl_cm = self.P * dNdx(self.energy, self.mass) #if n_cl_cm_in == None else self.P * n_cl_cm_in #from HEED simulations
+            n_cl_cm = self.P * dNdx(self.energy, self.mass, pure_argon = True) #if n_cl_cm_in == None else self.P * n_cl_cm_in #from HEED simulations
             #The factor is a correction to reproduce PEP4 in all the momentum range
             print('N/cm:\t', n_cl_cm)
             
@@ -466,7 +467,7 @@ class muon_tracks(muon_generator):
                 # Calculate the transverse diffusion on the z-y plane
                 if self.spread!= 0:
                     #Now we need to draw the number from the gaussian distribution
-                    pos = np.random.multivariate_normal((0,0), cov=self.spread**2 * np.identity(2),size=1)
+                    pos = np.random.multivariate_normal((0,0), cov = self.spread**2 * np.identity(2),size=1)
                     
                     self.electron_positions_diff[aux_electrons_total,0]+=pos[:,0]
                     
@@ -581,7 +582,7 @@ class Alphas_tracks(Source):
             # Calculate the transverse diffusion on the x-y plane
             if self.spread!=0:  
                 #Now we need to draw the number from the gaussian distribution
-                pos = np.random.multivariate_normal((0,0), cov=self.spread*np.identity(2),size=1)
+                pos = np.random.multivariate_normal((0,0), cov=self.spread**2 *np.identity(2),size=1)
                 
                 self.electron_positions_diff[i,0]+=pos[:,0]
                 
@@ -640,7 +641,7 @@ class Diffusion_handler(Gas):
         
         #Take an alpha track and add a difussion in cm
         for track in alpha_list:
-            track.spread= ( self.sigma_diff**2 + self.sigma_PSF )**0.5  # Desviación estándar de la Gaussiana (7.5 mm??? too much???)
+            track.spread= ( self.sigma_diff**2 + self.sigma_PSF **2 )**0.5  # Desviación estándar de la Gaussiana (7.5 mm??? too much???)
     
 
 
@@ -659,7 +660,7 @@ class Noise():
         
         #Dark_current (electrons/s) of the camera is 190 e/s. This depends exponentially on the
         #temperature
-        self.dark_current=dark_current
+        self.dark_current = dark_current
     
     def add_noise(self,exposition_time, Hist2d, sigma=5.7):
         
@@ -668,13 +669,13 @@ class Noise():
         
         #Electronic noise (e) = dark_current (e/s) * exposition_time (s)
         #These units are in electrons
-        electronic_noise=self.dark_current*exposition_time
+        electronic_noise = self.dark_current #* exposition_time
         
         #Create an array of n_bins*n_bins and populate them with random numbers
         #random_gauss=np.random.normal(scale=electronic_noise,size=Hist2d.shape)
         random_gauss=np.random.normal(loc=electronic_noise,size=Hist2d.shape,scale=sigma)
         #Ignore the negative ones?
-        random_gauss=abs(random_gauss)
+        #random_gauss=abs(random_gauss) #!!!!
         
         #Update the 2d histogram with this values and return it
         
@@ -709,18 +710,17 @@ class Image_2D():
         self.track_list = track_list
         
         #Get a list of all electron positions in all tracks
-        self.x_pos = np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,0] for i in range(len(track_list))]))
-        self.y_pos = np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,1] for i in range(len(track_list))]))
-        
-        #self.x_pos = np.concatenate([track_list[i].electron_positions_diff[:,0] for i in range(len(track_list))])
-        #self.y_pos = np.concatenate([track_list[i].electron_positions_diff[:,1] for i in range(len(track_list))])
+        #self.x_pos = np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,0] for i in range(len(track_list))]))
+        #self.y_pos = np.ndarray.flatten(np.asarray([track_list[i].electron_positions_diff[:,1] for i in range(len(track_list))]))
+        self.x_pos = np.concatenate([track_list[i].electron_positions_diff[:,0] for i in range(len(track_list))])
+        self.y_pos = np.concatenate([track_list[i].electron_positions_diff[:,1] for i in range(len(track_list))])
         
         #Get a list of all the true electron's positions in all tracks
-        self.x_pos_true = np.ndarray.flatten(np.asarray([track_list[i].electron_positions[:,0] for i in range(len(track_list))]))
-        self.y_pos_true = np.ndarray.flatten(np.asarray([track_list[i].electron_positions[:,1] for i in range(len(track_list))]))
+        #self.x_pos_true = np.ndarray.flatten(np.asarray([track_list[i].electron_positions[:,0] for i in range(len(track_list))]))
+        #self.y_pos_true = np.ndarray.flatten(np.asarray([track_list[i].electron_positions[:,1] for i in range(len(track_list))]))
         
-        #self.x_pos_true = np.concatenate([track_list[i].electron_positions[:,0] for i in range(len(track_list))])
-        #self.y_pos_true = np.concatenate([track_list[i].electron_positions[:,1] for i in range(len(track_list))])
+        self.x_pos_true = np.concatenate([track_list[i].electron_positions[:,0] for i in range(len(track_list))])
+        self.y_pos_true = np.concatenate([track_list[i].electron_positions[:,1] for i in range(len(track_list))])
         
         
         

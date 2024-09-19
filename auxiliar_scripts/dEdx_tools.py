@@ -13,56 +13,51 @@ from scipy.interpolate import interp1d
 os.chdir('../') #!!!!!!!!!!
 
 def load_cd(path):
-    data_S         =       np.loadtxt( path, skiprows=2, delimiter=' ')
-    pm_S_, dNdx_S_ =       np.split(data_S, 2, axis = 1)                       #pm  ->  p/m ; 
-    pm_S_ = pm_S_ * 1e-8
+    data_         =       np.loadtxt( path, skiprows=2, delimiter=' ')
+    pm_S_, dNdx_S_ =       np.split(data_, 2, axis = 1)                        #pm  ->  p/m ; 
+    pm_S_ = pm_S_
     pm_S = [] ; dNdx_S = []
     for a, b in zip(pm_S_, dNdx_S_):
         pm_S.append(float(a))
         dNdx_S.append(float(b))
         
-    return pm_S, dNdx_S
+    return np.array(pm_S), np.array(dNdx_S)
 
-def dNdx(Energy, mass,  Wi = 26.4, data = None, Pressure = 10):
+def dNdx(Energy, mass,  Wi = 26.4, Pressure = 10, path = 'data/cluster_densities/', file = 'ArCF4cd_', particle = 'muon', ext = '.txt', pure_argon = False):
+    print(os.getcwd())
+    fullpath = path + file + particle + ext
     
-    #Load data scanned from paper
-    #data_S         =       np.loadtxt('alpha_generator/data/' + data, delimiter=';')  #_S  ->  ref to Santovetti's data
-    #print(os.getcwd())
-    pm_mu, dNdx_mu = load_cd('nanodosimetry/cluster_densities/ClusterDensity_C3H8_1.00__0.00_Pressure_7600.00Torr_muon_.txt')
-    pm_pi, dNdx_pi = load_cd('nanodosimetry/cluster_densities/ClusterDensity_N2_1.00__0.00_Pressure_7600.00Torr_pion_.txt')
-    pm_k, dNdx_k = load_cd('nanodosimetry/cluster_densities/ClusterDensity_N2_1.00__0.00_Pressure_7600.00Torr_kaon_.txt')
-    pm_p, dNdx_p = load_cd('nanodosimetry/cluster_densities/ClusterDensity_N2_1.00__0.00_Pressure_7600.00Torr_proton_.txt')
+    p_mu, dNdx_mu = load_cd(fullpath)                              #Data for higher p
+    p_p, dNdx_p = load_cd(path + file + 'proton' + ext)            #Data for lower p
     
-    
+    pm_mu = p_mu / 105.66e6
+    pm_p = p_p / 938.272e6
     #Momentum calculation
     momentum = np.sqrt((Energy + mass)**2 - mass**2)                           #mass units
     print('p=', momentum)
     pm = momentum / mass
-    print('pm=', pm)
-
-    extrapolator = interp1d(pm_p, dNdx_p, kind='quadratic', fill_value='extrapolate')    
-    data_interpolator = interp1d(pm_mu, dNdx_mu, kind='linear', fill_value='extrapolate') #slinear
+    print('p/m=', pm)
     
-    dNdx_extrapolated = extrapolator(pm)
-    
-    
-    """
-    if pm < 500 and mass != 0.511:
+    if pm <= 1:
+        extrapolator = interp1d(pm_p, dNdx_p, kind = 'quadratic', fill_value = 'extrapolate')  
         dNdx_extrapolated = extrapolator(pm)
-    elif pm < 500 and mass == 0.511:
-        dNdx_extrapolated = extrapolator(pm)
+        if pure_argon == True:
+            dNdx_extrapolated = dNdx_extrapolated / 1.0561177042126448             #scale factor from Ar/CF4 (99/1) to Pure Ar
     else:
-        dNdx_extrapolated = extrapolator(pm)
-    #TESTING
-    #print('p\t=\t', momentum)
-    #print('p/m\t=\t', pm)
-    print('N/cm\t=\t', dNdx_extrapolated/10)
-   """
+        data_interpolator = interp1d(pm_mu, dNdx_mu, kind = 'linear', fill_value = 'extrapolate') #slinear
+        dNdx_extrapolated = data_interpolator(pm)
+        if pure_argon == True:
+            dNdx_extrapolated = dNdx_extrapolated / 1.0561177042126448             #scale factor from Ar/CF4 (99/1) to Pure Ar
+
     return dNdx_extrapolated / Pressure
 
 def Momentum(energy_list, mass):
     p_list = []
-    for energy in energy_list:
-        p_list.append(np.sqrt((energy + mass)**2 - mass**2))
-        
-    return np.array(p_list)
+    
+    if type(energy) == list:
+        for energy in energy_list:
+            p_list.append(np.sqrt((energy + mass)**2 - mass**2))
+            return np.array(p_list)
+    else:
+        p = np.sqrt((energy_list + mass)**2 - mass**2)
+        return p
