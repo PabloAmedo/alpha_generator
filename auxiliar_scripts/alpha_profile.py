@@ -60,7 +60,7 @@ hpix = 55    #remove this num of pxs horizontally at each side --> useful to min
 vpix = 40    #25 #height of the cut in pxs
 
 #Display settings
-show = False
+show = True
 #save = False
 cmap = 'RdBu'
 
@@ -84,27 +84,23 @@ custom_cmap = mcolors.ListedColormap(new_colors)
 
 #e- fluctuations
 rows = len(h2)
-h2ef_ = np.zeros_like(h2)
+h2ef = np.zeros_like(h2)
 for i in range(rows):
     for j in range(len(h2[i])):
         acum = 0
         for _ in range(int(h2[i][j])):
             acum = acum + np.random.exponential(scale = 1 )
-        h2ef_[i][j] = acum
-        """
-        else:
-            h2ef_[i][j] = 0
-        """
+        h2ef[i][j] = acum
         
 
-#ph fluctuations
-h2ef = np.random.poisson(h2ef_)
+#phe fluctuations
+h2phe = np.random.poisson(h2ef)
 
 
 
 #ITERATION ====================================================================
 
-#nfiles = 2
+nfiles = 2
 #Uncomment in the case we want to run it for diff
 for i in range(1, nfiles+1):
    data_path = path + str(i) + ext
@@ -132,7 +128,7 @@ for i in range(1, nfiles+1):
    
    #==============================================================================
    #h2cut = h2[:][26:76]
-   h2cut_ = h2ef[44:124][:]
+   h2cut_ = h2phe[44:124][:]
    h2cut = np.array([x[60:174] for x in h2cut_])
    h2sum = np.sum(h2cut, axis = 0)
     
@@ -161,7 +157,7 @@ for i in range(1, nfiles+1):
        
        plt.figure(figsize = (10,7))
        plt.title('Simulated', fontsize = 25)
-       b = plt.imshow(h2ef, cmap=cmap)
+       b = plt.imshow(h2phe, cmap=cmap)
        plt.colorbar(b)
        plt.vlines(60, 44, 124, colors='r')
        plt.vlines(174, 44, 124, colors='r')
@@ -214,5 +210,6 @@ save.close()
 x = np.linspace(0, len(h2[0]), len(h2[0]))
 plt.figure()
 plt.plot(x, np.sum(h2, axis = 0), label= 'h2')
-plt.plot(x, np.sum(h2ef_, axis = 0), label= 'h2ef_')
 plt.plot(x, np.sum(h2ef, axis = 0), label= 'h2ef')
+plt.plot(x, np.sum(h2phe, axis = 0), label= 'h2phe')
+plt.legend()

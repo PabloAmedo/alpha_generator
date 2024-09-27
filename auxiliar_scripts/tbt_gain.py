@@ -33,7 +33,7 @@ red = 10
 
 conf = '{}t_1e{}e'.format(n_tracks, red)
 diff = 0.21
-ath_angle = 35 * np.pi / 180
+ath_angle = 37 * np.pi / 180
 phi_angle = 42 * np.pi / 180
 bins = [224,183]
 pixel_size = (4.5e-4 * 12 * 23)
@@ -48,7 +48,7 @@ x_offcenter = x_offcenter_px * pixel_size
 y_offcenter = y_offcenter_px * pixel_size
 
 #Load data --------------------------------------------------------------------
-data = np.loadtxt('Gain anlysis/ImageJ_results/Result of ss_single_13 10px.csv', delimiter = ',', skiprows = 1)
+data = np.loadtxt('Gain anlysis/ImageJ_results/Result of ss_single_42 20px.csv', delimiter = ',', skiprows = 1)
 
 data_x, data_y, data_v = np.split(data, 3, axis=1)
 
@@ -156,8 +156,8 @@ data_profile = np.sum(data_img, axis = 0)
 x = np.linspace(0, len(data_profile), len(data_profile))
 
 plt.figure()
-plt.plot(x, data_profile/max(data_profile[30:]), label = 'data' )
-plt.plot(x + 6, sim_profile/max(sim_profile), label = 'sim')
+plt.plot(x, data_profile/max(data_profile[40:]), label = 'data' )
+plt.plot(x + 3, sim_profile/max(sim_profile), label = 'sim')
 plt.legend()
 
 
@@ -173,7 +173,7 @@ plt.legend()
 end = time.time()
 print('Time elapsed:\t', end-start)
 
-gain = float(max(data_profile[30:]) * 1.32 / opt_par['geomeff'] / 0.7) / (max(sim_profile) * 10)
+gain = float(max(data_profile[40:]) * 1.32 / opt_par['geomeff'] / 0.7) / (max(sim_profile) * 10)
 print('Gain:\t', gain)
 
 

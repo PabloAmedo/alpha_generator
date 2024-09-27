@@ -40,38 +40,7 @@ y_range = [-(pixel_size * bins[1])/2, (pixel_size * bins[1])/2]
 opt_params = LoadOpticalParams(rebin)
 #GENERATION ===================================================================
 
-source=Source(radius = 0.35, red_fact = red, rate = 1750)
-track_list=[]
-"""
-exposition_time = n_tracks / (source.rate)
-source.produce_alpha(n = n_tracks, store = track_list, ionization_profile = "Bragg", ath_in = ath_angle, phi_in = phi_angle)
-
-diff_handler=Diffusion_handler(sigma_diff = diff, sigma_PSF = 0)
-diff_handler.diffuse(track_list)
-
-for i in track_list: i.fill()
-
-noise = Noise(110)
-
-#Plot the tracks
-image2d = Image_2D(track_list = track_list, hist_args = {"bins": bins, "range":[x_range, y_range]}, 
-                   QE = float(opt_params['qeff']), GE = float(opt_params['geomeff']), Tp = float(opt_params['T']), 
-                   gain = gain)
-image2d.track_plot()
-image2d.plot_hist(noise_object = noise, exposition_time = exposition_time)
-image2d.plot_x(variable_cut = 'x', min_var = -0.648, max_var = 0.378)
-
-IMAGENtiff = noise.add_noise(exposition_time, image2d.Hist2D).T
-#PLOTS ========================================================================
-plt.figure()
-plt.title('Optical Gain = {}'.format(gain))
-img = plt.imshow(IMAGENtiff, cmap = 'gray', vmax = np.max(IMAGENtiff) * 1.1)
-plt.colorbar(img)
-"""
-#==============================================================================
-#==============================================================================
-#==============================================================================
-# GAIN 1500
+# GAIN 750
 
 gain = 750
 track_list=[]
@@ -84,7 +53,7 @@ diff_handler.diffuse(track_list)
 
 for i in track_list: i.fill()
 
-noise = Noise(410)
+noise = Noise(110)
 
 #Plot the tracks
 image2d = Image_2D(track_list = track_list, hist_args = {"bins": bins, "range":[x_range, y_range]}, 
@@ -169,39 +138,7 @@ plt.title('Optical Gain = {}'.format(gain))
 img = plt.imshow(IMAGENtiff2, cmap = 'RdBu', vmax = np.max(IMAGENtiff2) * 1.1)
 plt.colorbar(img)
 
-#==============================================================================
-#==============================================================================
-#==============================================================================
-#GAIN 10000
-"""
-gain = 10000
-track_list=[]
 
-exposition_time = n_tracks / (source.rate)
-source.produce_alpha(n = n_tracks, store = track_list, ionization_profile = "Bragg", ath_in = ath_angle, phi_in = phi_angle)
-
-diff_handler=Diffusion_handler(sigma_diff = diff, sigma_PSF = 0)
-diff_handler.diffuse(track_list)
-
-for i in track_list: i.fill()
-
-noise = Noise(110)
-
-#Plot the tracks
-image2d = Image_2D(track_list = track_list, hist_args = {"bins": bins, "range":[x_range, y_range]}, 
-                   QE = float(opt_params['qeff']), GE = float(opt_params['geomeff']), Tp = float(opt_params['T']), 
-                   gain = gain)
-image2d.track_plot()
-image2d.plot_hist(noise_object = noise, exposition_time = exposition_time)
-image2d.plot_x(variable_cut = 'x', min_var = -0.648, max_var = 0.378)
-
-IMAGENtiff = noise.add_noise(exposition_time, image2d.Hist2D)
-
-plt.figure()
-plt.title('Optical Gain = {}'.format(gain))
-img = plt.imshow(IMAGENtiff, cmap = 'gray', vmax = np.max(IMAGENtiff) * 1.1)
-plt.colorbar(img)
-"""
 
 #==============================================================================
 #==============================================================================
@@ -212,11 +149,11 @@ img0 = Image.open('../../Gain anlysis/Data/20240726/c-5254_r-2698_ac-2410_aa-300
 
 imgArr = np.array(img0)
 #Cutting the blob in the center 
-
+"""
 for i in range(79,85):
     for j in range(114,118):
         imgArr[i][j] = np.random.poisson(150) #100
-
+"""
 img0 = Image.fromarray(imgArr)
 
 plt.figure()
@@ -225,15 +162,14 @@ cbar = plt.imshow(img0, cmap = 'RdBu', vmax = np.max(img0) * 1.1)
 plt.colorbar(cbar)
 
 #==============================================================================
-
 img1 = Image.open('../tiffs/test/5 ms even higher gain/12x12 pre exposure/ss_single_5.tiff')
 
 imgArr = np.array(img1)
-
+"""
 for i in range(95,103):
     for j in range(104,110):
         imgArr[i][j] = 400
-
+"""
 img1 = Image.fromarray(imgArr)
 
 plt.figure()
@@ -245,7 +181,6 @@ plt.colorbar(cbar)
 #==============================================================================
 #==============================================================================
 #==============================================================================
-
 img = Image.open('../../Gain anlysis/Data/20240726/hvoff/12x12/2ms/ss_single_5.tiff')
 
 plt.figure()
@@ -253,6 +188,13 @@ plt.title('Data for bkg')
 cbar = plt.imshow(img, cmap = 'RdBu', vmax = np.max(img) * 1.1)
 plt.colorbar(cbar)
 
+
+img_ = Image.open('../tiffs/test/bin 12x12 100ms bkg/12x12.tiff')
+
+plt.figure()
+plt.title('Data for bkg')
+cbar = plt.imshow(img_, cmap = 'RdBu', vmax = np.max(img_) * 1.1)
+plt.colorbar(cbar)
 
 
 

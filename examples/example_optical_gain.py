@@ -23,12 +23,15 @@ plt.close('all')
 save = 0
 
 n_tracks = 1
-red = 1
+electrons = int(5.5e6 / 25.7) #214007
+ph_target = 2002
+
+red = 1#electrons / ph_target
 
 conf = '{}t_1e{}e'.format(n_tracks, red)
 diff = 0.25 
-ath_angle = 43 * np.pi / 180
-phi_angle = 165 * np.pi / 180
+ath_angle = 40 * np.pi / 180
+phi_angle = 190 * np.pi / 180
 bins = [256,256]
 pixel_size = (16e-4 * 4 * 18)
 
@@ -82,7 +85,8 @@ if save == 1:
 end = time.time()
 print('Time elapsed:\t', end-start)
 #noise es un objeto con dark current = 50 (linea 39)
+plt.close('all')
 
-IMAGENtiff = noise.add_noise(exposition_time, image2d.Hist2D)
-
-image = Image.fromarray(IMAGENtiff)
+plt.figure()
+plt.plot(np.sum(image2d.Hist2D, axis = 0))
+plt.xlim([85,135])

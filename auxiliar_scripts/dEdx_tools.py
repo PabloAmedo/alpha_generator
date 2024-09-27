@@ -23,7 +23,7 @@ def load_cd(path):
         
     return np.array(pm_S), np.array(dNdx_S)
 
-def dNdx(Energy, mass,  Wi = 26.4, Pressure = 10, path = 'data/cluster_densities/', file = 'ArCF4cd_', particle = 'muon', ext = '.txt', pure_argon = False):
+def dNdx(Energy, mass,  Wi = 26.4, Pressure = 10, path = 'alpha_generator/data/cluster_densities/', file = 'ArCF4cd_', particle = 'muon', ext = '.txt', pure_argon = False):
     print(os.getcwd())
     fullpath = path + file + particle + ext
     
@@ -54,7 +54,7 @@ def dNdx(Energy, mass,  Wi = 26.4, Pressure = 10, path = 'data/cluster_densities
 def Momentum(energy_list, mass):
     p_list = []
     
-    if type(energy) == list:
+    if type(energy_list) == list:
         for energy in energy_list:
             p_list.append(np.sqrt((energy + mass)**2 - mass**2))
             return np.array(p_list)

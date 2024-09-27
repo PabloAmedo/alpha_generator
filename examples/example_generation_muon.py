@@ -20,27 +20,36 @@ def Momentum(energy, mass):
     return np.array(p_list)
 
 #INPUTS========================================================================
-n_tracks    =   10
-P           =   10                                                             #bar
+n_tracks    =   1
+P           =   1.5                                                          #bar
 #y0          =   10
 #theta0      =   50
 E           =   2500                                                          #E = 4000 [MeV] (CR)
-dimensions  =   [250,250,250]
+dimensions  =   [14,14,14]
 mass        =   105.66
 gas         =   'ArCF4_99-1_01mm'
 e_cut       =   10000
 
-px_size     =   0.2
-sigma_diff  =   0.25
+px          =   13e-3 
+rebin       =   4 
+mag         =   11 
+px_size     =   (px * rebin * mag)*1e-1
+
+sigma_diff  =   0.17    #!!!!!!!!!!!!!!!!!! NOT SURE
 sigma_PSF   =   0
 line        =   False
 
-bins        =   int(dimensions[0] / px_size)
+bins        =   [int(dimensions[0] / px_size), int(dimensions[1] / px_size)]
+
+emccd_gain  =   1000
 
 muons       =   [] 
 
 #==============================================================================
 #==============================================================================
+
+x_range = [0, (px_size * bins[0])]
+y_range = [0, (px_size * bins[1])]
 
 #Muons generation
 muon = muon_generator(energy = E, geometry = dimensions, gas = gas, pressure = P)            #First generate the muon object
@@ -55,7 +64,7 @@ for muon in muons: muon.fill()
 #Noise object
 noise=Noise(10)
 #Plot the final tracks
-image2d=Image_2D(track_list = muons, hist_args={"bins":bins}, pixel_size = px_size)
+image2d=Image_2D(track_list = muons, hist_args={"bins":bins, "range": [x_range, y_range]}, pixel_size = px_size)
 image2d.track_plot()
 image2d.plot_hist(noise_object=noise)
 image2d.plot_x()
@@ -78,3 +87,6 @@ plt.xlabel('X (cm)', fontsize = 15)
 plt.ylabel('Y (cm)', fontsize = 15)
 
 print('px size:\t({:.3f} x {:.3f}) (cm x cm)'.format(np.mean(np.diff(hist_x)), np.mean(np.diff(hist_y))))
+
+plt.figure()
+plt.imshow(image2d.Hist2D)
