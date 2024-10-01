@@ -15,6 +15,7 @@ import matplotlib.lines as mlines
 import glob as glob
 import math as math
 import scipy.ndimage.filters as filters
+from scipy.interpolate import interp1d
 
 #Avoid warning in console
 import warnings
@@ -607,41 +608,77 @@ class Alphas_tracks(Source):
                 array_to_store.append(self.electron_positions_diff[j,other_index])
                 
         return array_to_store
-    
 
-     
+
 class Gas:
     
     """This is the gass class. It includes information about the W, drift velocity, etc"""
     
-    def __init__(self,vz=None,Dt=None,Dl=None,Wi=None,density=None):
+    def __init__(self,gas = 'ArCF4_99-1', vz = None, Dt = None, Dl = None,
+                 Wi = 25.7,density=1.662e-3, A = 40, Z = 18, I = 188e-6,
+                 L_drift = 14.2, Pressure = 1):
         
-        self.vz=vz
-        self.Dt=Dt
-        self.Dl=Dl
-        self.Wi=Wi
-        self.density=density
+        self.gas = gas
+        
+        #This has to be changed for the case of a mixture
+        #Default values are for Pure Ar
+        self.Wi = Wi                #eV/e
+        self.density = density      #g/cm3
+        self.A = A
+        self.Z = Z      
+        self.I = I                  #Mev
+        
+        #Setup info --> change this
+        self.L_drift = L_drift
+        self.Pressure = Pressure
         
         
-        self.A=40
-        self.Z=18
-        self.I=25.7e-6 #Mev
+    def vz(self, RedField):
+        #Load data from: https://github.com/UTA-REST/ArXe_plus_anything/blob/master/Argon_Plots/Argon_CF4.png
+        data_vz = pd.read_csv('alpha_generator/data/diffusion/driftV_' + self.gas + '.csv', delimiter = ';')
+        #Linear interpolator to get vz for every Drift Field value
+        vz_interpolate = interp1d(data_vz['Reduced Drift Field (V/cm/bar)'], data_vz['Drift Velocity (mm/us)'])
+        self.drift_velocity = vz_interpolate(RedField)                          #value in mm/us
+        
+    def Dt(self, RedField):
+        #Load data from: https://github.com/UTA-REST/ArXe_plus_anything/blob/master/Argon_Plots/Argon_CF4.png
+        data_Dt = pd.read_csv('alpha_generator/data/diffusion/diffT_' + self.gas + '.csv', delimiter = ';')
+        #Linear interpolator to get Dt for every Drift Field value
+        Dt_interpolate = interp1d(data_Dt['Reduced Drift Field (V/cm/bar)'], data_Dt['Dt (sqrt(bar)*um*1/sqrt(cm))'])
+        self.Dt_coef = Dt_interpolate(RedField)
+        #Sigma diff (transversal) in mm
+        self.sigma_diff = self.Dt_coef / np.sqrt(self.Pressure) * np.sqrt(self.L_drift) * 1e-3    #value in mm
+        
+    def Dl(self, RedField):
+        """Currently this is not being used"""
+        #Load data from: https://github.com/UTA-REST/ArXe_plus_anything/blob/master/Argon_Plots/Argon_CF4.png
+        data_Dl = pd.read_csv('alpha_generator/data/diffusion/diffL_' + self.gas + '.csv', delimiter = ';')
+        #Linear interpolator to get Dl for every Drift Field value
+        Dl_interpolate = interp1d(data_Dl['Reduced Drift Field (V/cm/bar)'], data_Dt['Dl (sqrt(bar)*um*1/sqrt(cm))'])
+        self.Dl_coef = Dl_interpolate(RedField)
+        #Sigma diff (transversal) in mm
+        self.sigma_diffL = self.Dl_coef / np.sqrt(self.Pressure) * np.sqrt(self.L_drift) * 1e-3    #value in mm
 
 class Diffusion_handler(Gas):
 
-    """This class handles the application of diffusion from the gas. It inherits from the gass
-    class"""
-    def __init__(self,sigma_diff=0.25,sigma_PSF=0):
+    """This class handles the application of diffusion from the gas. It inherits from the gas
+    class."""
+    
+    def __init__(self, sigma_diff = None, sigma_PSF = 0):
+        
+        super().__init__()
+        if sigma_diff:
+            self.sigma_diff = sigma_diff
         
         self.u = 1
-        self.sigma_diff = sigma_diff
         self.sigma_PSF = sigma_PSF
         
-    def diffuse(self,alpha_list):
+        
+    def diffuse(self, track_list):
         
         #Take an alpha track and add a difussion in cm
-        for track in alpha_list:
-            track.spread= ( self.sigma_diff**2 + self.sigma_PSF **2 )**0.5  # Desviación estándar de la Gaussiana (7.5 mm??? too much???)
+        for track in track_list:
+            track.spread = ( self.sigma_diff**2 + self.sigma_PSF**2 )**0.5
     
 
 

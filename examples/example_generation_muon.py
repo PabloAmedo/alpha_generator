@@ -40,16 +40,13 @@ sigma_PSF   =   0
 line        =   False
 
 bins        =   [int(dimensions[0] / px_size), int(dimensions[1] / px_size)]
-
-emccd_gain  =   1000
+x_range = [0, (px_size * bins[0])]
+y_range = [0, (px_size * bins[1])]
 
 muons       =   [] 
 
 #==============================================================================
 #==============================================================================
-
-x_range = [0, (px_size * bins[0])]
-y_range = [0, (px_size * bins[1])]
 
 #Muons generation
 muon = muon_generator(energy = E, geometry = dimensions, gas = gas, pressure = P)            #First generate the muon object
