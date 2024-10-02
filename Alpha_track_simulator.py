@@ -42,32 +42,13 @@ from dEdx_tools import *
 from general_tools import *
 from bragg_distribution import *
 
-###############################################################################
-# =============================================================================
-# 
-#                               TO DO LIST
-#                         
-# =============================================================================
-# 
-# - Define the cluster's distribution functions outside the class/method
-# - Define a function to read and format the data for cluster's distributions
-# - Fix the tracks generation (calculations of y, y0, ...) maybe this is taking to much time
-# - Change names: muon to particle 
-# - Define dictionary with names and masses of different particles os they could be called easier
-# - Double check if all the modules are being used
-# - Optimize the directories/folders structure
-# - Create that folders structure, lol
-# - Include dEdx from Santovetti et al. to compare with simulated -- This was previously done by one script that it's not in use now
-# - Include the nclusters for CH4 on the calculation of n_cl_cm (now is done by *1.1 factor)
-# =============================================================================
-
 
 
 class Source:
     
     """This is the source class. It includes all the relevant information about the source"""
     
-    def __init__(self,rate=500,energy=5.5,radius=0.35,M=933,range_alpha=4.8, We=25.7e-6, red_fact = 1):
+    def __init__(self, rate = 500, energy = 5.5, radius = 0.35, M = 933, range_alpha = 4.8, We = 25.7e-6, red_fact = 1):
         
         self.rate=rate #In Hz
         
@@ -93,24 +74,24 @@ class Source:
             self.acum=None
 
         for i in range(n):
-            if phi_in==None:
-                phi=np.random.rand()*2*np.pi
+            if phi_in == None:
+                phi = np.random.rand() * 2 * np.pi
             else:
-                phi=phi_in
+                phi = phi_in
                 
-            if ath_in==None:
-                ath=np.random.rand()*np.pi/2
+            if ath_in == None:
+                ath = np.random.rand() * np.pi / 2
             else:
-                ath=ath_in
+                ath = ath_in
                             
-            theta=np.random.rand()*2*np.pi
+            theta = np.random.rand() * 2 * np.pi
 
-            x0=np.cos(theta)*self.radius*np.random.rand()
-            y0=np.sin(theta)*self.radius*np.random.rand()
+            x0 = np.cos(theta) * self.radius * np.random.rand()
+            y0 = np.sin(theta) * self.radius * np.random.rand()
                  
-            alpha=Alphas_tracks(x=self.x,acum=self.acum,range_alpha=self.range_alpha,
-                                phi=phi,ath=ath,x0=x0,y0=y0,ionization_profile=ionization_profile, 
-                                n_electrons=n_electrons)
+            alpha = Alphas_tracks(x = self.x, acum = self.acum, range_alpha = self.range_alpha,
+                                phi = phi, ath = ath, x0 = x0, y0 = y0, ionization_profile = ionization_profile, 
+                                n_electrons = n_electrons)
             store.append(alpha)
             
         return store
@@ -122,19 +103,15 @@ class Source:
         
         stored_tracks       --> list with tracks previously generated
         collimated_tracks   --> list where the collimated tracks will be stored
-        phi                 --> angle where the collimator is set
-        slit                --> distance of the window
+        phi                 --> collimation angle
+        slit                --> width of the window
         dist                --> distance from the alpha to the window
         """
-        
         # beta. Angle between source and window's edge
-        
-        beta=np.arctan((slit/2/dist))
+        beta = np.arctan((slit / 2 / dist))
         
         for track in stored_tracks:
-            
-            if track.phi<=phi_col+beta and track.phi >= phi_col-beta:
-                
+            if track.phi <= phi_col + beta and track.phi >= phi_col-beta:
                 collimated_tracks.append(track)
         
         return collimated_tracks
@@ -470,9 +447,9 @@ class muon_tracks(muon_generator):
                     #Now we need to draw the number from the gaussian distribution
                     pos = np.random.multivariate_normal((0,0), cov = self.spread**2 * np.identity(2),size=1)
                     
-                    self.electron_positions_diff[aux_electrons_total,0]+=pos[:,0]
+                    self.electron_positions_diff[aux_electrons_total,0] += pos[:,0]
                     
-                    self.electron_positions_diff[aux_electrons_total,1]+=pos[:,1]
+                    self.electron_positions_diff[aux_electrons_total,1] += pos[:,1]
                     
                 aux_electrons_total = aux_electrons_total + 1
         
@@ -568,29 +545,30 @@ class Alphas_tracks(Source):
         for i in range(int(self.n_electrons)):
             
             #Get the radial position of the electron alongside the track
-            if self.ionization=='Bragg':
-                r_pos=self.ionization_profile(self.X,self.acum)*self.range
+            if self.ionization == 'Bragg':
+                r_pos = self.ionization_profile(self.X, self.acum) * self.range
             else:
-                r_pos=self.ionization_profile()*self.range
+                r_pos = self.ionization_profile() * self.range
                             
             #Change the positions
-            self.electron_positions[i,0]=np.cos(self.phi)*r_pos + self.x0
-            self.electron_positions[i,1]=np.sin(self.phi)*r_pos + self.y0
+            self.electron_positions[i,0] = np.cos(self.phi) * r_pos + self.x0
+            self.electron_positions[i,1] = np.sin(self.phi) * r_pos + self.y0
             #Change the positions
-            self.electron_positions_diff[i,0]=np.cos(self.phi)*r_pos + self.x0
-            self.electron_positions_diff[i,1]=np.sin(self.phi)*r_pos + self.y0
+            self.electron_positions_diff[i,0] = np.cos(self.phi) * r_pos + self.x0
+            self.electron_positions_diff[i,1] = np.sin(self.phi) * r_pos + self.y0
             
             # Calculate the transverse diffusion on the x-y plane
-            if self.spread!=0:  
+            if self.spread != 0:
+
                 #Now we need to draw the number from the gaussian distribution
-                pos = np.random.multivariate_normal((0,0), cov=self.spread**2 *np.identity(2),size=1)
+                pos = np.random.multivariate_normal((0,0), cov = self.spread**2 * np.identity(2), size = 1)
                 
-                self.electron_positions_diff[i,0]+=pos[:,0]
+                self.electron_positions_diff[i,0] += pos[:,0]
                 
-                self.electron_positions_diff[i,1]+=pos[:,1]
+                self.electron_positions_diff[i,1] += pos[:,1]
                 
                 
-    def select(self,variable_scan="x",min_var=0,max_var=100,array_to_store=None):
+    def select(self, variable_scan = "x", min_var = 0, max_var = 100, array_to_store = None):
         """This method scans the positions of the electrons either in the x or y direction and
         it selects them based on a condition on the other variable. Ex: we scan in x and select
         electrons whose y position fulfills y_min<y<y_max"""
@@ -640,7 +618,9 @@ class Gas:
         vz_interpolate = interp1d(data_vz['Reduced Drift Field (V/cm/bar)'], data_vz['Drift Velocity (mm/us)'])
         self.drift_velocity = vz_interpolate(RedField)                          #value in mm/us
         
-    def Dt(self, RedField):
+    def Dt(self, RedField, L_drift = None):
+        if L_drift:
+            self.L_drift = L_drift
         #Load data from: https://github.com/UTA-REST/ArXe_plus_anything/blob/master/Argon_Plots/Argon_CF4.png
         data_Dt = pd.read_csv('alpha_generator/data/diffusion/diffT_' + self.gas + '.csv', delimiter = ';')
         #Linear interpolator to get Dt for every Drift Field value
@@ -654,7 +634,7 @@ class Gas:
         #Load data from: https://github.com/UTA-REST/ArXe_plus_anything/blob/master/Argon_Plots/Argon_CF4.png
         data_Dl = pd.read_csv('alpha_generator/data/diffusion/diffL_' + self.gas + '.csv', delimiter = ';')
         #Linear interpolator to get Dl for every Drift Field value
-        Dl_interpolate = interp1d(data_Dl['Reduced Drift Field (V/cm/bar)'], data_Dt['Dl (sqrt(bar)*um*1/sqrt(cm))'])
+        Dl_interpolate = interp1d(data_Dl['Reduced Drift Field (V/cm/bar)'], data_Dl['Dl (sqrt(bar)*um*1/sqrt(cm))'])
         self.Dl_coef = Dl_interpolate(RedField)
         #Sigma diff (transversal) in mm
         self.sigma_diffL = self.Dl_coef / np.sqrt(self.Pressure) * np.sqrt(self.L_drift) * 1e-3    #value in mm
@@ -672,13 +652,25 @@ class Diffusion_handler(Gas):
         
         self.u = 1
         self.sigma_PSF = sigma_PSF
+        self.sigmas = []
         
-        
-    def diffuse(self, track_list):
-        
+    def diffuse(self, track_list, RedField):
+        print('dl:', self.L_drift)
         #Take an alpha track and add a difussion in cm
         for track in track_list:
-            track.spread = ( self.sigma_diff**2 + self.sigma_PSF**2 )**0.5
+            track.fill()
+            y_positions = track.electron_positions[:,1]
+            print('y_pos:',y_positions)
+            self.z_positions = y_positions * np.tan(track.ath)
+            print('z_pos:', self.z_positions)
+            ldrift = self.L_drift - self.z_positions
+            
+            for i in range(len(ldrift)):
+ 
+                self.Dt(RedField, ldrift[i])
+                #print(ldrift[i])
+                self.sigmas.append(self.sigma_diff)
+            track.spread = ( (self.sigma_diff / 10)**2 + self.sigma_PSF**2 )**0.5
     
 
 
