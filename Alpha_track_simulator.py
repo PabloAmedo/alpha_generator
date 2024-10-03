@@ -413,7 +413,6 @@ class muon_tracks(muon_generator):
         This method is used to fill the clean muon track through the chamber 
         with the electrons produced in the ionization.
         """
-        
         #Calculate the slope (assuming 2D trakcs)
         #y(x) = m * x + n
         slope = (self.y-self.y0) / (self.x-self.x0)
@@ -530,7 +529,7 @@ class Alphas_tracks(Source):
         #Storage of electrons (x,y) positions after diffusion
         self.electron_positions_diff=np.zeros([n_electrons,2])
         
-    def fill(self):
+    def fill(self, diff = False):
         
         """This method must only be called when we want to fill the final alpha track with
         electrons. 
@@ -539,9 +538,10 @@ class Alphas_tracks(Source):
         along the track. Then it picks a number to situate along transverse gaussian distribution
         that mimics diffusion. If the spread is zero then we don't apply the transversal diffusion.
         """
-        
+
         #Draw a number from the ionization profile distribution
         #self.ionization_profile=1
+        """
         for i in range(int(self.n_electrons)):
             
             #Get the radial position of the electron alongside the track
@@ -556,16 +556,29 @@ class Alphas_tracks(Source):
             #Change the positions
             self.electron_positions_diff[i,0] = np.cos(self.phi) * r_pos + self.x0
             self.electron_positions_diff[i,1] = np.sin(self.phi) * r_pos + self.y0
-            
-            # Calculate the transverse diffusion on the x-y plane
-            if self.spread != 0:
+        """
+        
+        if np.all(self.electron_positions == 0):
+            for i in range(int(self.n_electrons)):
+                if self.ionization == 'Bragg':
+                    r_pos = self.ionization_profile(self.X, self.acum) * self.range
+                else:
+                    r_pos = self.ionization_profile() * self.range
+                
+                self.electron_positions[i,0] = np.cos(self.phi) * r_pos + self.x0
+                self.electron_positions[i,1] = np.sin(self.phi) * r_pos + self.y0
+                
+                self.electron_positions_diff[i,0] =  np.cos(self.phi) * r_pos + self.x0
+                self.electron_positions_diff[i,1] =  np.sin(self.phi) * r_pos + self.y0
 
-                #Now we need to draw the number from the gaussian distribution
-                pos = np.random.multivariate_normal((0,0), cov = self.spread**2 * np.identity(2), size = 1)
-                
-                self.electron_positions_diff[i,0] += pos[:,0]
-                
-                self.electron_positions_diff[i,1] += pos[:,1]
+        # Calculate the transverse diffusion on the x-y plane
+        if diff == True:
+            #Now we need to draw the number from the gaussian distribution
+            pos = np.random.multivariate_normal((0,0), cov = self.spread**2 * np.identity(2), size = int(self.n_electrons))
+            
+            self.electron_positions_diff[:,0] += pos[:,0]
+            
+            self.electron_positions_diff[:,1] += pos[:,1]
                 
                 
     def select(self, variable_scan = "x", min_var = 0, max_var = 100, array_to_store = None):
@@ -618,9 +631,8 @@ class Gas:
         vz_interpolate = interp1d(data_vz['Reduced Drift Field (V/cm/bar)'], data_vz['Drift Velocity (mm/us)'])
         self.drift_velocity = vz_interpolate(RedField)                          #value in mm/us
         
-    def Dt(self, RedField, L_drift = None):
-        if L_drift:
-            self.L_drift = L_drift
+    def Dt(self, RedField):
+        
         #Load data from: https://github.com/UTA-REST/ArXe_plus_anything/blob/master/Argon_Plots/Argon_CF4.png
         data_Dt = pd.read_csv('alpha_generator/data/diffusion/diffT_' + self.gas + '.csv', delimiter = ';')
         #Linear interpolator to get Dt for every Drift Field value
@@ -655,25 +667,23 @@ class Diffusion_handler(Gas):
         self.sigmas = []
         
     def diffuse(self, track_list, RedField):
-        print('dl:', self.L_drift)
+
         #Take an alpha track and add a difussion in cm
         for track in track_list:
-            track.fill()
+            #FIXME To get electron position you have to use fill method
+            track.fill(diff = False)
             y_positions = track.electron_positions[:,1]
-            print('y_pos:',y_positions)
-            self.z_positions = y_positions * np.tan(track.ath)
-            print('z_pos:', self.z_positions)
+            self.z_positions = abs(y_positions) * np.tan(track.ath)
+
             ldrift = self.L_drift - self.z_positions
             
             for i in range(len(ldrift)):
- 
-                self.Dt(RedField, ldrift[i])
+                self.L_drift = ldrift[i]
+                self.Dt(RedField)
                 #print(ldrift[i])
                 self.sigmas.append(self.sigma_diff)
             track.spread = ( (self.sigma_diff / 10)**2 + self.sigma_PSF**2 )**0.5
     
-
-
     
 class Noise():
 
@@ -691,7 +701,7 @@ class Noise():
         #temperature
         self.dark_current = dark_current
     
-    def add_noise(self,exposition_time, Hist2d, sigma=5.7):
+    def add_noise(self, exposition_time, Hist2d, sigma=5.7):
         
         """This method adds noise to each pixel of a 2D histogram as a function of the
         electronic noise and the exposure time"""
@@ -907,27 +917,6 @@ class Image_2D():
         return (self.le_hist, self.electron_cut)
     
 
-###############################################################################
-###############################################################################
-###############################################################################
-# =============================================================================
-# 
-#                         AUXILIAR FUNCTIONS
-#                         
-# =============================================================================
-#JUST PUTTING THIS HERE PROVISIONAL -- CAN BE MMOVED INTO ANOTHER FILE LATER
-
-def statistics_avalanche(e_per_cluster):
-    nClusters = len(e_per_cluster)
-    detectedElectrons   = []
-    
-    for i in range(nClusters):
-        acum = 0
-        for _ in range(int(e_per_cluster[i])):
-            acum = acum + np.random.exponential(scale = 1 )
-        detectedElectrons.append(acum) #FIXME
-
-    return np.array(detectedElectrons)
 
 
 
