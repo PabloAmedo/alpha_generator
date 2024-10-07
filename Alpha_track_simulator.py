@@ -63,8 +63,17 @@ class Source:
         self.n_e=int(energy/We)                                  #Add We at some point
         self.red_fact = red_fact
     
-    def produce_alpha(self,n,store,ionization_profile, n_electrons= None,phi_in=None,ath_in=None,theta=None): 
-        """This method produces an alpha track from the alpha_tracks class"""        
+    def produce_alpha(self, n, store,ionization_profile, phi_in=None, ath_in=None, theta=None): 
+        """This method produces an alpha track from the alpha_tracks class
+        
+            - n                 : number of alpha tracks
+            - store             : list to store results
+            - ionization_profile: mainly Bragg distribution for ionization
+            - phi_in            : angle in xy plane [0, 2*pi]
+            - ath_in            : angle in yz plane [0, pi/2]
+            - (!)theta          : angle inside source active region --> determine initial position (x0, y0)
+        
+        """        
         n_electrons = int(214007/self.red_fact)
         if ionization_profile=='Bragg':
             self.x,self.Sp,self.acum=bragg_peak(self.energy,self.range_alpha)
@@ -149,7 +158,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
         self.P = pressure                                                      #bar
         
         
-    def produce_muon(self,n , store, y0_in=None, phi0_in=None, theta0_in=None, e_cut = 10000, line = False, n_cl_cm_in = None):
+    def produce_muon(self, n, store, y0_in = None, phi_in = None, ath_in = None, e_cut = 10000, line = False, n_cl_cm_in = None):
         
         """
         This method is used to generate n muon tracks by randomly generate a 
@@ -173,7 +182,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
         
         track_len=[]  
         for i in range(n):
-            phi0    = 0                                                        #FIXME: just for testing (simple case)
+            phi0 = 0                                                        #FIXME: just for testing (simple case)
             
             if line == True:
                 y0 = y0_in if y0_in != None else self.ymax / 2
@@ -196,9 +205,10 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                     xout = (self.ymax - y0) / np.tan(theta0)
             
             tr_len = np.sqrt(xout**2 + (yout-y0)**2)
+        
+            
             
             ####################### CLUSTER + ELECTRONS #######################
-            
             #Getting the number of clusters for the given self.energy and particle (self.mass)
             #n_cl_cm = self.P * dNdx(self.energy, self.mass)
             #print('n_cl_cm', n_cl_cm)
@@ -481,39 +491,39 @@ class Alphas_tracks(Source):
     
     def __init__(self,x,acum,range_alpha,phi=None,ath=None,x0=None,y0=None,spread=0,ionization_profile="Flat", n_electrons=int(5.5/25.7e-6)): #FIXME
         super().__init__()
-        self.ionization=ionization_profile
-        self.X=x
-        self.acum=acum            #si no da error
+        self.ionization = ionization_profile
+        self.X = x
+        self.acum  = acum            #si no da error
                                   #son vectores x y Sp, necesarios para los randoms
         
         #This is the range of the alpha. Get it from NIST
-        self.range_max=range_alpha #In cm
+        self.range_max = range_alpha #In cm
         
         #Athimutal angle. This reduces our effective alpha range by the projection
-        self.ath=ath
+        self.ath = ath
         
         #Define an effective range
-        self.range=self.range_max*np.cos(ath)
+        self.range = self.range_max * np.cos(ath)
                       
-        self.x0=x0
-        self.y0=y0
+        self.x0 = x0
+        self.y0 = y0
       
         #X position in the plane
-        self.x= np.cos(phi)*self.range*np.cos(ath) + self.x0 
+        self.x = np.cos(phi) * self.range * np.cos(ath) + self.x0 
         
         #Y position in the plane
-        self.y=np.sin(phi)*self.range*np.cos(ath)  + self.y0
+        self.y = np.sin(phi) * self.range * np.cos(ath) + self.y0
         
         #Phi angle
-        self.phi=phi
+        self.phi = phi
                
         #This is defined at 2 sigma and will be handled by the Difussion_handler class
-        self.spread=spread
+        self.spread = spread
         
         #Set the ionization profile to be flat between the 0 and the range
-        self.dict_ion_prof={
-            "Flat":np.random.rand,
-            "Bragg":random_bragg
+        self.dict_ion_prof = {
+            "Flat": np.random.rand,
+            "Bragg": random_bragg
             }
         
         self.ionization_profile=self.dict_ion_prof[self.ionization]
@@ -540,24 +550,6 @@ class Alphas_tracks(Source):
         """
 
         #Draw a number from the ionization profile distribution
-        #self.ionization_profile=1
-        """
-        for i in range(int(self.n_electrons)):
-            
-            #Get the radial position of the electron alongside the track
-            if self.ionization == 'Bragg':
-                r_pos = self.ionization_profile(self.X, self.acum) * self.range
-            else:
-                r_pos = self.ionization_profile() * self.range
-                            
-            #Change the positions
-            self.electron_positions[i,0] = np.cos(self.phi) * r_pos + self.x0
-            self.electron_positions[i,1] = np.sin(self.phi) * r_pos + self.y0
-            #Change the positions
-            self.electron_positions_diff[i,0] = np.cos(self.phi) * r_pos + self.x0
-            self.electron_positions_diff[i,1] = np.sin(self.phi) * r_pos + self.y0
-        """
-        
         if np.all(self.electron_positions == 0):
             for i in range(int(self.n_electrons)):
                 if self.ionization == 'Bragg':

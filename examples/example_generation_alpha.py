@@ -21,7 +21,7 @@ argon = Gas(gas = 'ArCF4')
 
 # Create a source and a list to store the tracks
 
-source = Source(radius = 0.35, red_fact = 10) #Radius in cm
+source = Source(radius = 0.35, red_fact = 100) #Radius in cm
 
 track_list = []
 

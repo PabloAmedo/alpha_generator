@@ -54,7 +54,7 @@ muon.produce_muon(n = n_tracks, store = muons, e_cut = e_cut, line = line)     #
 
 #Applying diffusion to each track
 diff_handler=Diffusion_handler(sigma_diff= sigma_diff ,sigma_PSF=sigma_PSF)
-diff_handler.diffuse(muons)
+diff_handler.diffuse(muons, 180)
 #Filling tracks with e-
 for muon in muons: muon.fill()
 
