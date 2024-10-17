@@ -158,7 +158,8 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
         self.P = pressure                                                      #bar
         
         
-    def produce_muon(self, n, store, y0_in = None, phi_in = None, ath_in = None, e_cut = 10000, line = False, n_cl_cm_in = None):
+    def produce_muon(self, n, store, position_in = None, phi_in = None, ath_in = None, line = False, 
+                     e_cut = 10000, n_cl_cm_in = None, length = None):
         
         """
         This method is used to generate n muon tracks by randomly generate a 
@@ -172,63 +173,54 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
             -phi0              : (float)  initial position
             -theta0            : (float) 
             -e_cut             : (int) max number of e- produced in a single cl
-            -line              : (bool) trackas crossing in a straight line the chamber
+            -(!)line              : (bool) trackas crossing in a straight line the chamber
         -----------------------------------------------------------------------
         
         Output: muon_tracks object
         """
         
         ########################### POSITIONS #################################
-        
-        track_len=[]  
         for i in range(n):
-            phi0 = 0                                                        #FIXME: just for testing (simple case)
-            
-            if line == True:
-                y0 = y0_in if y0_in != None else self.ymax / 2
-                yout = y0
-                xout = self.xmax
-                theta0 = 0
-                
-            
+            if position_in:
+                self.x0, self.y0, self.z0 = position_in
             else:
-                y0 = y0_in if y0_in != None else self.ymax * np.random.rand()
-                theta0 = theta0_in* (np.pi/180) if theta0_in != None else np.random.rand() * np.pi/2
+                #If initial position is not given we generate a random one
+                self.x0 = 0 # np.random.rand(n) * self.xmax     # IF X0 = 0 THE TRACK 'COMES' FROM THIS SIDE
+                self.y0 = np.random.rand() * self.ymax
+                self.z0 = np.random.rand() * self.zmax
+            
+            #Get/generate angles
+            self.phi = phi_in if phi_in != None else np.random.rand() * np.random.choice((-1, 1)) * np.pi / 2 
+            self.ath = ath_in if ath_in != None else np.random.rand() *  np.pi
+            
+         
+            phi_min = np.arctan((self.ymax - self.y0 ) / self.xmax)
+            ath_min = np.arctan(self.xmax / (self.zmax - self.z0 ))
+            ath_max = np.arctan(self.z0 / self.xmax) + np.pi / 2
+    
+            #Computing final positions
+            if length:
+                xout = length * np.cos(self.phi) * np.cos(self.ath)
+                yout = length * np.cos(self.phi) * np.sin(self.ath)
+                zout = length * np.cos(self.phi) #FIXME 
+                    
+            else:
+                #If a length is not given we assume it goes through the entire region
+                xout = self.xmax if self.phi <= phi_min else (self.ymax - self.y0) / np.tan(self.phi)
+                yout = self.y0 + np.tan(self.phi) * xout if self.phi <= phi_min else self.ymax 
                 
-                theta_max = np.arctan((self.ymax - y0) / self.xmax)
-                
-                if theta0 <= theta_max:
-                    xout = self.xmax
-                    yout = y0 + np.tan(theta0) * xout
+                if self.ath <= ath_min:
+                    zout = self.zmax
+                elif ath_min < self.ath <= ath_max:
+                    zout = self.z0 + abs(xout - self.x0) * np.tan(np.pi/2 - self.ath) if self.ath <= np.pi/2 else self.z0 + abs(xout - self.x0) * np.tan(self.ath - np.pi/2)
                 else:
-                    yout = self.ymax
-                    xout = (self.ymax - y0) / np.tan(theta0)
-            
-            tr_len = np.sqrt(xout**2 + (yout-y0)**2)
+                    zout = 0
+            tr_len = np.sqrt((xout - self.x0)**2 + (yout - self.y0)**2 + (zout - self.z0)**2)
         
-            
-            
             ####################### CLUSTER + ELECTRONS #######################
-            #Getting the number of clusters for the given self.energy and particle (self.mass)
-            #n_cl_cm = self.P * dNdx(self.energy, self.mass)
-            #print('n_cl_cm', n_cl_cm)
-            
-            n_cl_cm = self.P * dNdx(self.energy, self.mass, pure_argon = True) #if n_cl_cm_in == None else self.P * n_cl_cm_in #from HEED simulations
-            #The factor is a correction to reproduce PEP4 in all the momentum range
-            print('N/cm:\t', n_cl_cm)
-            
-            #Calculate the avg n of clusters for the track
+            #Getting the number of clusters for the given energy and particle (self.mass)
+            n_cl_cm = self.P * dNdx(self.energy, self.mass, pure_argon = False) #if n_cl_cm_in == None else self.P * n_cl_cm_in #from HEED simulations
             n_cl_avg = np.random.poisson(lam = tr_len * n_cl_cm)
-            
-            #Define the 1/n^2 parametrizarions from data
-            def ClusterParametrizationAr(n):
-                return 0.216/n**2 
-
-            def ClusterParametrizationCH4(n):
-                return 0.119/n**2
-            
-            def ClusterParametrizationGeneral(n):
-                return 1/n**2
             
             #FIXME: I HAVE TO CLEAN THIS A BIT (remove the useless ones)
             #CLUSTER DISTRIBUTOIN FOR DIFFERENT GASES --- Maybe this could be done from a dict???? - fixme
@@ -248,19 +240,8 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 
                 n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
                                           p = probs_final / probs_final.sum())
-            
-            elif self.gas == 'ArCH4_90-10':#from dEdx presentation (digitalized with webplotdigitalizer)
-                data_ArCH4_9010 = np.loadtxt('data/clusters_distributions/ArCH4_90-10_cluster_distribution_HEED.csv', delimiter=';')
-                _, P_el = np.split(data_ArCH4_9010, 2, axis = 1)
-                P_el = P_el.flatten()
-                n_el = np.linspace(1, 133, 133)
-                probabilities_133 = ClusterParametrizationAr(np.linspace(134, e_cut, e_cut-133))
-                probs_final = np.concatenate((P_el, probabilities_133))
                 
-                n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
-                                          p = probs_final / probs_final.sum())
-                
-            elif self.gas == 'ArCH4_93-7_01mm':#from HEED (01mm to remove the XR propagation)
+            elif self.gas == 'ArCH4_93-7':#from HEED 
                 data_ArCH4_9307 = np.loadtxt('data/clusters_distributions/ArCH4-93-7-10bar_0.1x0.1x0.1mmCell_pi2.5GeV_normalized.txt' , skiprows = 1)
                 n_el, P_el, _ = np.split(data_ArCH4_9307, 3, axis = 1)
                 P_el = P_el.flatten() ; n_el = n_el.flatten()
@@ -272,7 +253,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
                                           p = probs_final / probs_final.sum())
                 
-            elif self.gas == 'ArCH4_90-10_01mm':#from HEED (01mm to remove the XR propagation)
+            elif self.gas == 'ArCH4_90-10':#from HEED 
                 data_ArCH4_9010 = np.loadtxt('data/clusters_distributions/ArCH4-90-10-10bar_0.1x0.1x0.1mmCell_pi2.5GeV_normalized.txt' , skiprows = 1)
                 n_el, P_el, _ = np.split(data_ArCH4_9010, 3, axis = 1)
                 P_el = P_el.flatten() ; n_el = n_el.flatten()
@@ -285,7 +266,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                                           p = probs_final / probs_final.sum())
                 
                 
-            elif self.gas == 'ArCF4_99-1_01mm':#from HEED (01mm to remove the XR propagation)
+            elif self.gas == 'ArCF4_99-1':#from HEED 
                 data_ArCF4_9901 = np.loadtxt('alpha_generator/data/clusters_distributions/ArCF4-99-1-10bar_0.1x0.1x0.1mmCell_8GeVmuons_normalized.txt' , skiprows = 1)
                 n_el, P_el, _ = np.split(data_ArCF4_9901, 3, axis = 1)
                 P_el = P_el.flatten() ; n_el = n_el.flatten()
@@ -305,18 +286,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 
                 n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
                                           p = probs_final / probs_final.sum())
-                
-            elif self.gas == 'KrCH4_93-7_01mm':#from HEED (01mm to remove the XR propagation)
-                data_KrCH4_9307 = np.loadtxt('.txt' , skiprows = 1)
-                n_el, P_el, _ = np.split(data_KrCH4_9307, 3, axis = 1)
-                P_el = P_el.flatten() ; n_el = n_el.flatten()
-                probabilities_aboveKr = ClusterParametrizationGeneral(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
-                probabilities_aboveCH4 = ClusterParametrizationCH4(np.linspace(int(max(n_el))+1, e_cut, e_cut-int(max(n_el))))
-                probabilities_above = probabilities_aboveKr*0.93 + probabilities_aboveCH4*0.07
-                probs_final = np.concatenate((P_el, probabilities_above))
-                
-                n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
-                                          p = probs_final / probs_final.sum())
+
                 
             elif self.gas == 'PEP4':#from HEED (01mm to remove the XR propagation)
                 n_cl_cm = 0.9844562192883783 * self.P * dNdx(self.energy, self.mass)
@@ -349,7 +319,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 
             elif self.gas == 'nano-C3H8':
                 
-                n_cl_avg = np.random.poisson(lam = tr_len * n_cl_cm * 2.65)
+                n_cl_avg = np.random.poisson(lam = tr_len[i] * n_cl_cm * 2.65)
                 data_nanoC3H8 = np.loadtxt('nanodosimetry/cluster_size/propane-10bar_0.1x0.1x0.1mmCell_2.5GeVmuons_normalized.txt')
                 n_el, P_el, _ = np.split(data_nanoC3H8, 3, axis = 1)
                 P_el = P_el.flatten() / 100 ; n_el = n_el.flatten()
@@ -361,22 +331,15 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 n_e_cl = np.random.choice(np.linspace(1, e_cut, e_cut), size = n_cl_avg, 
                                           p = probs_final / probs_final.sum())
                 
-            #Calculation of initial and final position ---> Improve to 3D
-            z0 = tr_len * np.sin(theta0) * np.cos(phi0)
-            y0 = y0
-            x0 = 0
-            
-            z = z0
-            y = yout
-            x =xout
-            
+
             #Uniform distribution of the clusters along the track
-            cl_position = np.random.uniform(low = 0, high = xout, size = len(n_e_cl))
+            cl_position = np.random.uniform(low = 0, high = xout, size = len(n_e_cl)) #x position
             cl_position = np.sort(cl_position)
             
             #Saving into muon_tracks object
-            muon = muon_tracks(energy = self.energy, track_length = tr_len, initial_position = [x0, y0, z0], 
-                               final_position =[x, y, z] , clusters = cl_position, n_e_cl = n_e_cl, geometry = [self.xmax, self.ymax, self.zmax])
+            muon = muon_tracks(energy = self.energy, track_length = tr_len, initial_position = [self.x0, self.y0, self.z0], 
+                               final_position =[xout, yout, zout] , ath = self.ath, phi= self.phi,
+                               clusters = cl_position, n_e_cl = n_e_cl, geometry = [self.xmax, self.ymax, self.zmax])
             store.append(muon)
             
         return n_e_cl, cl_position
@@ -391,13 +354,15 @@ class muon_tracks(muon_generator):
     *This has been copied form alpha_tracks almost entirely! To be revised
     """
     
-    def __init__(self, energy, track_length, initial_position, final_position, clusters, n_e_cl, geometry = [1,1,1], spread = 0):
+    def __init__(self, energy, track_length, initial_position, final_position, ath, phi,  clusters, n_e_cl, geometry = [1,1,1], spread = 0):
         
         self.energy = energy
         self.track_length = track_length
         self.x0, self.y0, self.z0 = initial_position
         self.x, self.y, self.z = final_position
-        self.clusters = clusters    #z coord of each cluster
+        self.ath = ath
+        self.phi = phi
+        self.clusters = clusters    #x coord of each cluster
         self.n_e_cl = n_e_cl
         self.n_electrons = np.sum(n_e_cl)
         self.xmax, self.ymax, self.zmax = geometry
@@ -417,52 +382,60 @@ class muon_tracks(muon_generator):
         
         #Storage of electrons (z,y) positions after diffusion
         self.electron_positions_diff=np.zeros([int(self.n_electrons),2])
-        
-    def fill(self):
+    
+    
+    def fill(self, diff = False):
         """
         This method is used to fill the clean muon track through the chamber 
         with the electrons produced in the ionization.
         """
-        #Calculate the slope (assuming 2D trakcs)
+        #We have the initial and final coordinates in XY. Assuming a linear track
+        #we have to calculate the slope to have the linear equation
         #y(x) = m * x + n
-        slope = (self.y-self.y0) / (self.x-self.x0)
-        
-        def lineal_track(x):
-            return slope * x + self.y0
-        
-        cl_y_tr = []                  #List to store y coord of cl around track 
-        cl_x_tr = []                  #List to store x coord of cl around track
+        if np.all(self.electron_positions == 0):
+            slope = (self.y-self.y0) / (self.x-self.x0)
+            linear_track = lambda x : slope * x + self.y0
+            """  
+            cl_y_pos = np.array(linear_track(self.clusters))                        #cluster's y coordinate
+            cl_y_tr = cl_y_pos[(cl_y_pos >= 0) & (cl_y_pos <= self.ymax)]           #List to store y coord of cl around track
+            cl_x_tr = self.clusters                                                 #List to store x coord of cl around track
+            ¡¡¡ I ALSO HAVE TO REMOVE THE X'S THAT CORRESPONDS TO THOSE Y'S !!!
+            """
+            cl_y_tr = []                  #List to store y coord of cl around track 
+            cl_x_tr = []                  #List to store x coord of cl around track
 
-        for i in range(len(self.clusters)):
-            cl_y_pos = lineal_track(self.clusters[i])
-            if cl_y_pos <= self.ymax and cl_y_pos >= 0:
-                cl_y_tr.append(cl_y_pos)
-                cl_x_tr.append(self.clusters[i])
+            for i in range(len(self.clusters)):
+                cl_y_pos = linear_track(self.clusters[i])
+                if cl_y_pos <= self.ymax and cl_y_pos >= 0:
+                    cl_y_tr.append(float(cl_y_pos))
+                    cl_x_tr.append(self.clusters[i])
+            
+            
+            cl_x_tr = np.array(cl_x_tr)
+            cl_y_tr = np.array(cl_y_tr)
+            #Assign positions to e in cluster 
+            aux_electrons_total = 0
+            for i in range(len(self.clusters)):
+                for j in range(int(self.n_e_cl[i])):
+                    #Change the positions
+                    self.electron_positions[aux_electrons_total, 0] = cl_x_tr[i]
+                    self.electron_positions[aux_electrons_total, 1] = cl_y_tr[i]
+                    #Change the positions
+                    self.electron_positions_diff[aux_electrons_total, 0] = cl_x_tr[i]
+                    self.electron_positions_diff[aux_electrons_total, 1] = cl_y_tr[i]
+                    aux_electrons_total += 1
         
-        #Assign positions to e in cluster
-        aux_electrons_total = 0
-        for i in range(len(self.clusters)):
-            for j in range(int(self.n_e_cl[i])):
-                #Change the positions
-                self.electron_positions[aux_electrons_total,0] = cl_x_tr[i]
-                self.electron_positions[aux_electrons_total,1] = cl_y_tr[i]
-                #Change the positions
-                self.electron_positions_diff[aux_electrons_total,0] = cl_x_tr[i]
-                self.electron_positions_diff[aux_electrons_total,1] = cl_y_tr[i]
-                
+        # Calculate the transverse diffusion on the z-y plane
+        if diff == True:
+            #Now we need to draw the number from the gaussian distribution
+            pos = np.random.multivariate_normal((0,0), cov = self.spread**2 * np.identity(2), size = int(self.n_electrons))
+            
+            self.electron_positions_diff[:,0] += pos[:,0]
+            
+            self.electron_positions_diff[:,1] += pos[:,1]
         
-                # Calculate the transverse diffusion on the z-y plane
-                if self.spread!= 0:
-                    #Now we need to draw the number from the gaussian distribution
-                    pos = np.random.multivariate_normal((0,0), cov = self.spread**2 * np.identity(2),size=1)
-                    
-                    self.electron_positions_diff[aux_electrons_total,0] += pos[:,0]
-                    
-                    self.electron_positions_diff[aux_electrons_total,1] += pos[:,1]
-                    
-                aux_electrons_total = aux_electrons_total + 1
-        
-        return cl_x_tr, cl_y_tr
+        #return cl_x_tr, cl_y_tr
+    
     
     def select(self,variable_scan="x",min_var=0,max_var=100,array_to_store=None):
         """This method scans the positions of the electrons either in the x or y direction and
@@ -631,6 +604,7 @@ class Gas:
         Dt_interpolate = interp1d(data_Dt['Reduced Drift Field (V/cm/bar)'], data_Dt['Dt (sqrt(bar)*um*1/sqrt(cm))'])
         self.Dt_coef = Dt_interpolate(RedField)
         #Sigma diff (transversal) in mm
+        print('Dtcoef', self.Dt_coef)
         self.sigma_diff = self.Dt_coef / np.sqrt(self.Pressure) * np.sqrt(self.L_drift) * 1e-3    #value in mm
         
     def Dl(self, RedField):
@@ -657,8 +631,13 @@ class Diffusion_handler(Gas):
         self.u = 1
         self.sigma_PSF = sigma_PSF
         self.sigmas = []
+    def diffuse(self,alpha_list):
         
-    def diffuse(self, track_list, RedField):
+        #Take an alpha track and add a difussion in cm
+        for track in alpha_list:
+            track.spread= ( self.sigma_diff**2 + self.sigma_PSF )**0.5  # Desviación estándar de la Gaussiana (7.5 mm??? too much???)
+    
+    def diffuseL(self, track_list, RedField):
 
         #Take an alpha track and add a difussion in cm
         for track in track_list:

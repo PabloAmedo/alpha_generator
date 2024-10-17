@@ -38,7 +38,7 @@ source.produce_alpha(n = n_tracks, store = track_list, ath_in = None, ionization
 diff_handler = Diffusion_handler(sigma_PSF = 0)
 # Update the diffusion for each track
 diff_handler.diffuse(track_list, 180)
-"""
+
 # Generate the electrons alongside the tracks. This will generate the original positions of
 # the electrons and the diffused positions as well
 for i in track_list: i.fill(diff = True)
@@ -53,7 +53,7 @@ image2d = Image_2D(track_list = track_list, hist_args = {"bins":100})
 image2d.track_plot()
 image2d.plot_hist(noise_object = noise, exposition_time = exposition_time)
 image2d.plot_x()
-"""
+
 end = time.time()
 
 print('Elapsed time:\t', end - st)

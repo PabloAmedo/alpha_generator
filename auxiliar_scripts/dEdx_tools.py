@@ -61,3 +61,10 @@ def Momentum(energy_list, mass):
     else:
         p = np.sqrt((energy_list + mass)**2 - mass**2)
         return p
+
+
+# PARAMETRIZATIONS OF THE N CLUSTERS PER UNIT LENGTH FOR DIFFERENT GASES BASED ON FISCHLE ET AL. WORK
+# Define the 1/n^2 parametrizarions from data
+ClusterParametrizationAr = lambda n : 0.216 / n**2 
+ClusterParametrizationCH4 = lambda n : 0.119 / n**2 
+ClusterParametrizationGeneral = lambda n : 1 / n**2 
