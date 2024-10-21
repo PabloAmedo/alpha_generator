@@ -24,7 +24,7 @@ def load_cd(path):
     return np.array(pm_S), np.array(dNdx_S)
 
 def dNdx(Energy, mass,  Wi = 26.4, Pressure = 10, path = 'alpha_generator/data/cluster_densities/', file = 'ArCF4cd_', particle = 'muon', ext = '.txt', pure_argon = False):
-    print(os.getcwd())
+    #print(os.getcwd())
     fullpath = path + file + particle + ext
     
     p_mu, dNdx_mu = load_cd(fullpath)                              #Data for higher p
@@ -34,9 +34,9 @@ def dNdx(Energy, mass,  Wi = 26.4, Pressure = 10, path = 'alpha_generator/data/c
     pm_p = p_p / 938.272e6
     #Momentum calculation
     momentum = np.sqrt((Energy + mass)**2 - mass**2)                           #mass units
-    print('p=', momentum)
+    #print('p=', momentum)
     pm = momentum / mass
-    print('p/m=', pm)
+    #print('p/m=', pm)
     
     if pm <= 1:
         extrapolator = interp1d(pm_p, dNdx_p, kind = 'quadratic', fill_value = 'extrapolate')  

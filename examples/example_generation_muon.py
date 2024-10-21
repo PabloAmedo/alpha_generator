@@ -11,11 +11,11 @@ import scipy.special as spc
 from mpl_toolkits.mplot3d import Axes3D
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-
+import time
 
 plt.close('all')
 print('Running...\n')
-
+t0 = time.time()
 def Momentum(energy, mass):
     p_list = []
     p_list.append(np.sqrt((energy + mass)**2 - mass**2))
@@ -23,20 +23,21 @@ def Momentum(energy, mass):
     return np.array(p_list)
 
 #INPUTS========================================================================
-n_tracks    =   5
+n_tracks    =   15
 P           =   1                                                         #bar
 #y0          =   10
 #ath0        =   50 * ( np.pi / 180)
 E           =   2500                                                          #E = 4000 [MeV] (CR)
-dimensions  =   [14,14,14]
+dimensions  =   [50,25,25]
 mass        =   105.66
 gas         =   'ArCF4_99-1'
 e_cut       =   10000
-
+"""
 px          =   13e-3 
 rebin       =   4 
 mag         =   11 
-px_size     =   (px * rebin * mag) * 1e-1
+"""
+px_size     =   0.2 #(px * rebin * mag) * 1e-1
 
 sigma_diff  =   0.21    #!!!!!!!!!!!!!!!!!! NOT SURE
 sigma_PSF   =   0
@@ -53,7 +54,8 @@ muons       =   []
 
 #Muons generation
 muon = muon_generator(energy = E, geometry = dimensions, gas = gas, pressure = P)            #First generate the muon object
-muon.produce_muon(n = n_tracks, store = muons, e_cut = e_cut)#, phi_in = 45 * np.pi / 180)#, ath_in =  np.pi/1.5 )     #generate muon's obj stored in muons list
+muon.produce_muon(n = n_tracks, store = muons, e_cut = e_cut)#,
+                  #ath_in = 45 * np.pi / 180)#, phi_in = 45 * np.pi / 180)#, ath_in =  np.pi/1.5 )     #generate muon's obj stored in muons list
 
 argon = Gas(gas = 'ArCF4', L_drift = abs(dimensions[2] - muons[0].z0), Pressure = P)
 
@@ -69,7 +71,7 @@ noise=Noise(10)
 image2d=Image_2D(track_list = muons, hist_args={"bins":bins, "range": [x_range, y_range]}, pixel_size = px_size)
 #image2d.track_plot()
 #image2d.plot_hist(noise_object=noise)
-image2d.plot_x()
+#image2d.plot_x()
 
 plt.close('all')
 
@@ -97,17 +99,17 @@ x = []
 y = []
 z = []
 for i in range(len(muons)):
-    x = [float(muons[i].x0), float(muons[i].x)]
-    y = [float(muons[i].y0), float(muons[i].y)]
-    z = [float(muons[i].z0), float(muons[i].z)]
+    x = muons[i].electron_positions_diff[:,0]
+    y = muons[i].electron_positions_diff[:,1]
+    z = muons[i].electron_positions_diff[:,2]
 
-    ax.plot(x, y, z,'-o', color = 'r')
+    ax.plot(x, y, z,'.', color = 'r')
 cube_size = dimensions[0]
 for i in range(2):
     for j in range(2):
-        ax.plot([0, cube_size], [i*cube_size, i*cube_size], [j*cube_size, j*cube_size], color='k')
-        ax.plot([i*cube_size, i*cube_size], [0, cube_size], [j*cube_size, j*cube_size], color='k')
-        ax.plot([i*cube_size, i*cube_size], [j*cube_size, j*cube_size], [0, cube_size], color='k')
+        ax.plot([0, dimensions[0]], [i*dimensions[1], i*dimensions[1]], [j*dimensions[2], j*dimensions[2]], color='k')
+        ax.plot([i*dimensions[0], i*dimensions[0]], [0, dimensions[1]], [j*dimensions[2], j*dimensions[2]], color='k')
+        ax.plot([i*dimensions[0], i*dimensions[0]], [j*dimensions[1], j*dimensions[1]], [0, dimensions[2]], color='k')
         
 ax.set_xlabel('Eje X')
 ax.set_ylabel('Eje Y')
@@ -118,3 +120,7 @@ ax.set_ylim([0 - 3 , dimensions[1] + 3])
 ax.set_zlim([0 - 3, dimensions[2] + 3])
 ax.grid(False)
 plt.show()
+
+tf = time.time()
+
+print('Time elapsed:\t{} s'.format(tf - t0))

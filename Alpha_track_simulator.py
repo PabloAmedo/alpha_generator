@@ -376,12 +376,7 @@ class muon_tracks(muon_generator):
         
         #This is defined at 2 sigma and will be handled by the Difussion_handler class
         self.spread=spread
-        
-        #Storage of electrons (z,y) positions
-        self.electron_positions=np.zeros([int(self.n_electrons),2]) # coordenadas [x,y] para los 50 electrones
-        
-        #Storage of electrons (z,y) positions after diffusion
-        self.electron_positions_diff=np.zeros([int(self.n_electrons),2])
+
     
     
     def fill(self, diff = False):
@@ -392,52 +387,63 @@ class muon_tracks(muon_generator):
         #We have the initial and final coordinates in XY. Assuming a linear track
         #we have to calculate the slope to have the linear equation
         #y(x) = m * x + n
-        if np.all(self.electron_positions == 0):
-            slope = (self.y-self.y0) / (self.x-self.x0)
-            linear_track = lambda x : slope * x + self.y0
-            """  
-            cl_y_pos = np.array(linear_track(self.clusters))                        #cluster's y coordinate
-            cl_y_tr = cl_y_pos[(cl_y_pos >= 0) & (cl_y_pos <= self.ymax)]           #List to store y coord of cl around track
-            cl_x_tr = self.clusters                                                 #List to store x coord of cl around track
-            ¡¡¡ I ALSO HAVE TO REMOVE THE X'S THAT CORRESPONDS TO THOSE Y'S !!!
-            """
-            cl_y_tr = []                  #List to store y coord of cl around track 
-            cl_x_tr = []                  #List to store x coord of cl around track
-
-            for i in range(len(self.clusters)):
-                cl_y_pos = linear_track(self.clusters[i])
-                if cl_y_pos <= self.ymax and cl_y_pos >= 0:
-                    cl_y_tr.append(float(cl_y_pos))
-                    cl_x_tr.append(self.clusters[i])
-            
-            
-            cl_x_tr = np.array(cl_x_tr)
-            cl_y_tr = np.array(cl_y_tr)
-            #Assign positions to e in cluster 
-            aux_electrons_total = 0
-            for i in range(len(self.clusters)):
-                for j in range(int(self.n_e_cl[i])):
-                    #Change the positions
-                    self.electron_positions[aux_electrons_total, 0] = cl_x_tr[i]
-                    self.electron_positions[aux_electrons_total, 1] = cl_y_tr[i]
-                    #Change the positions
-                    self.electron_positions_diff[aux_electrons_total, 0] = cl_x_tr[i]
-                    self.electron_positions_diff[aux_electrons_total, 1] = cl_y_tr[i]
-                    aux_electrons_total += 1
         
+        slope_xy = (self.y-self.y0) / (self.x-self.x0)
+        slope_xz = (self.z-self.z0) / (self.x-self.x0)
+        linear_track_xy = lambda x : slope_xy * x + self.y0
+        linear_track_xz = lambda x : slope_xz * x + self.z0
+        cl_y_tr = []                  #List to store y coord of cl around track 
+        cl_x_tr = []                  #List to store x coord of cl around track
+        cl_z_tr = []
+        ne = []
+        
+        for i in range(len(self.clusters)):
+            cl_y_pos = linear_track_xy(self.clusters[i])
+            cl_z_pos = linear_track_xz(self.clusters[i])
+            if (0 <= cl_y_pos <= self.ymax) and (0 <= cl_z_pos <= self.zmax):
+                cl_y_tr.append(float(cl_y_pos))
+                cl_x_tr.append(self.clusters[i])
+                cl_z_tr.append(float(cl_z_pos))
+                ne.append(self.n_e_cl[i])
+        
+        cl_x_tr = np.array(cl_x_tr)
+        cl_y_tr = np.array(cl_y_tr)
+        cl_z_tr = np.array(cl_z_tr)
+        
+        #Storage of electrons (z,y) positions
+        self.electron_positions=np.zeros([int(sum(ne)), 3]) # coordenadas [x,y] para los 50 electrones
+        #Storage of electrons (z,y) positions after diffusion
+        self.electron_positions_diff=np.zeros([int(sum(ne)), 3])
+        
+        #Assign positions to e in cluster 
+        aux_electrons_total = 0
+        for i in range(len(cl_y_tr)):#FIXME
+            for j in range(int(self.n_e_cl[i])):
+                #Change the positions
+                self.electron_positions[aux_electrons_total, 0] = cl_x_tr[i]
+                self.electron_positions[aux_electrons_total, 1] = cl_y_tr[i]
+                self.electron_positions[aux_electrons_total, 2] = cl_z_tr[i]
+                
+                #Change the positions
+                self.electron_positions_diff[aux_electrons_total, 0] = cl_x_tr[i]
+                self.electron_positions_diff[aux_electrons_total, 1] = cl_y_tr[i]
+                self.electron_positions_diff[aux_electrons_total, 2] = cl_z_tr[i]
+                
+                aux_electrons_total += 1
+
         # Calculate the transverse diffusion on the z-y plane
         if diff == True:
             #Now we need to draw the number from the gaussian distribution
-            pos = np.random.multivariate_normal((0,0), cov = self.spread**2 * np.identity(2), size = int(self.n_electrons))
+            pos = np.random.multivariate_normal((0,0,0), cov = self.spread**2 * np.identity(3), size = int(sum(ne)))
             
             self.electron_positions_diff[:,0] += pos[:,0]
-            
             self.electron_positions_diff[:,1] += pos[:,1]
-        
-        #return cl_x_tr, cl_y_tr
+            self.electron_positions_diff[:,2] += pos[:,2]
+            
+            #return cl_x_tr, cl_y_tr
     
     
-    def select(self,variable_scan="x",min_var=0,max_var=100,array_to_store=None):
+    def select(self,variable_scan="x",min_var=0,max_var=100,array_to_store=None):#FIXME --> Change for loop limits!
         """This method scans the positions of the electrons either in the x or y direction and
         it selects them based on a condition on the other variable. Ex: we scan in x and select
         electrons whose y position fulfills y_min<y<y_max"""
