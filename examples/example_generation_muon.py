@@ -12,6 +12,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 import time
+import matplotlib
 
 plt.close('all')
 print('Running...\n')
@@ -23,12 +24,12 @@ def Momentum(energy, mass):
     return np.array(p_list)
 
 #INPUTS========================================================================
-n_tracks    =   15
-P           =   1                                                         #bar
+n_tracks    =   50
+P           =   1                                                               #bar
 #y0          =   10
 #ath0        =   50 * ( np.pi / 180)
 E           =   2500                                                          #E = 4000 [MeV] (CR)
-dimensions  =   [50,25,25]
+dimensions  =   [500,250,250]
 mass        =   105.66
 gas         =   'ArCF4_99-1'
 e_cut       =   10000
@@ -54,8 +55,8 @@ muons       =   []
 
 #Muons generation
 muon = muon_generator(energy = E, geometry = dimensions, gas = gas, pressure = P)            #First generate the muon object
-muon.produce_muon(n = n_tracks, store = muons, e_cut = e_cut)#,
-                  #ath_in = 45 * np.pi / 180)#, phi_in = 45 * np.pi / 180)#, ath_in =  np.pi/1.5 )     #generate muon's obj stored in muons list
+muon.produce_muon(n = n_tracks, store = muons, e_cut = e_cut,
+                  position_in = [25, 12.5, 12.5])#, ath_in = 90 * np.pi / 180)#, ath_in = 100 * np.pi / 180 )     #generate muon's obj stored in muons list
 
 argon = Gas(gas = 'ArCF4', L_drift = abs(dimensions[2] - muons[0].z0), Pressure = P)
 
@@ -98,12 +99,13 @@ ax = fig.add_subplot(111, projection='3d')
 x = []
 y = []
 z = []
+colors = colors = list(matplotlib.colors.XKCD_COLORS)
 for i in range(len(muons)):
     x = muons[i].electron_positions_diff[:,0]
     y = muons[i].electron_positions_diff[:,1]
     z = muons[i].electron_positions_diff[:,2]
 
-    ax.plot(x, y, z,'.', color = 'r')
+    ax.plot(x, y, z,'.', color = colors[i])
 cube_size = dimensions[0]
 for i in range(2):
     for j in range(2):
@@ -114,10 +116,10 @@ for i in range(2):
 ax.set_xlabel('Eje X')
 ax.set_ylabel('Eje Y')
 ax.set_zlabel('Eje Z')
-
-ax.set_xlim([0 - 3 , dimensions[0] + 3])
-ax.set_ylim([0 - 3 , dimensions[1] + 3])
-ax.set_zlim([0 - 3, dimensions[2] + 3])
+max_dim = max(dimensions)
+ax.set_xlim([0 - 3 , max_dim + 3])
+ax.set_ylim([0 - 3 , max_dim + 3])
+ax.set_zlim([0 - 3, max_dim + 3])
 ax.grid(False)
 plt.show()
 

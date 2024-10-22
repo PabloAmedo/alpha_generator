@@ -185,7 +185,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 self.x0, self.y0, self.z0 = position_in
             else:
                 #If initial position is not given we generate a random one
-                self.x0 = 0 # np.random.rand(n) * self.xmax     # IF X0 = 0 THE TRACK 'COMES' FROM THIS SIDE
+                self.x0 = 0 #np.random.rand(n) * self.xmax     # IF X0 = 0 THE TRACK 'COMES' FROM THIS SIDE
                 self.y0 = np.random.rand() * self.ymax
                 self.z0 = np.random.rand() * self.zmax
             
@@ -200,9 +200,9 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
     
             #Computing final positions
             if length:
-                xout = length * np.cos(self.phi) * np.cos(self.ath)
-                yout = length * np.cos(self.phi) * np.sin(self.ath)
-                zout = length * np.cos(self.phi) #FIXME 
+                xout = self.x0 + length * np.cos(self.phi) * np.sin(self.ath)
+                yout = self.y0 + length * np.sin(self.phi) * np.sin(self.ath)
+                zout = self.z0 + length * np.cos(self.phi) #FIXME 
                     
             else:
                 #If a length is not given we assume it goes through the entire region
@@ -333,7 +333,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 
 
             #Uniform distribution of the clusters along the track
-            cl_position = np.random.uniform(low = 0, high = xout, size = len(n_e_cl)) #x position
+            cl_position = np.random.uniform(low = self.x0, high = xout, size = n_cl_avg) #x position
             cl_position = np.sort(cl_position)
             
             #Saving into muon_tracks object
@@ -376,7 +376,8 @@ class muon_tracks(muon_generator):
         
         #This is defined at 2 sigma and will be handled by the Difussion_handler class
         self.spread=spread
-
+        #self.electron_positions = np.zeros([int(self.n_electrons), 3]) # coordenadas [x,y] para los 50 electrones
+        #self.electron_positions_diff = np.zeros([int(self.n_electrons), 3]) # coordenadas [x,y] para los 50 electrones
     
     
     def fill(self, diff = False):
