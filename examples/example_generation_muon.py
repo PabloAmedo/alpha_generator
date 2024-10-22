@@ -7,8 +7,6 @@ Created on Wed Dec 27 12:16:43 2023
 import os
 os.chdir('../')
 from Alpha_track_simulator import *
-import scipy.special as spc
-from mpl_toolkits.mplot3d import Axes3D
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 import time
@@ -24,7 +22,7 @@ def Momentum(energy, mass):
     return np.array(p_list)
 
 #INPUTS========================================================================
-n_tracks    =   50
+n_tracks    =   5
 P           =   1                                                               #bar
 #y0          =   10
 #ath0        =   50 * ( np.pi / 180)
@@ -56,7 +54,7 @@ muons       =   []
 #Muons generation
 muon = muon_generator(energy = E, geometry = dimensions, gas = gas, pressure = P)            #First generate the muon object
 muon.produce_muon(n = n_tracks, store = muons, e_cut = e_cut,
-                  position_in = [25, 12.5, 12.5])#, ath_in = 90 * np.pi / 180)#, ath_in = 100 * np.pi / 180 )     #generate muon's obj stored in muons list
+                  position_in = [25, 10, 12.5])#, ath_in = 90 * np.pi / 180)#, ath_in = 100 * np.pi / 180 )     #generate muon's obj stored in muons list
 
 argon = Gas(gas = 'ArCF4', L_drift = abs(dimensions[2] - muons[0].z0), Pressure = P)
 
