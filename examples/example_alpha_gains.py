@@ -45,13 +45,14 @@ opt_params = LoadOpticalParams(rebin)
 gain = 750
 track_list=[]
 
-exposition_time = n_tracks / (source.rate)
+source = Source(radius = 0.35, red_fact = 1)
 source.produce_alpha(n = n_tracks, store = track_list, ionization_profile = "Bragg", ath_in = ath_angle, phi_in = phi_angle)
+exposition_time = n_tracks / (source.rate)
 
 diff_handler=Diffusion_handler(sigma_diff = diff, sigma_PSF = 0)
 diff_handler.diffuse(track_list)
 
-for i in track_list: i.fill()
+for i in track_list: i.fill(diff = True)
 
 noise = Noise(110)
 
@@ -86,8 +87,7 @@ source.produce_alpha(n = n_tracks, store = track_list, ionization_profile = "Bra
 diff_handler=Diffusion_handler(sigma_diff = diff, sigma_PSF = 0)
 diff_handler.diffuse(track_list)
 
-for i in track_list: i.fill()
-
+for i in track_list: i.fill(diff = True)
 noise = Noise(110)
 
 #Plot the tracks
@@ -119,8 +119,7 @@ source.produce_alpha(n = n_tracks, store = track_list, ionization_profile = "Bra
 diff_handler=Diffusion_handler(sigma_diff = diff, sigma_PSF = 0)
 diff_handler.diffuse(track_list)
 
-for i in track_list: i.fill()
-
+for i in track_list: i.fill(diff = True)
 noise = Noise(110)
 
 #Plot the tracks

@@ -41,11 +41,11 @@ os.chdir('alpha_generator/')
 #INPUTS========================================================================
 gas             =       'PEP4'
 n_cl_cm         =       False #29.6933                                         #from HEED simulations
-name            =       'DELETEnano30_1'
+name            =       'DELETEnano30_13'
 file_tosave     =       open('dEdx/simulated_data_lt/'+ name +'.txt', 'x');         
 file_tosave.write('\nINPUTS\n'+'='*50+'\n')  
 energy_list     =       np.logspace(1, 5, 10000) ;          file_tosave.write('Energy range:\t{} - {} ({}) (MeV)\n'.format(energy_list[0], energy_list[-1], len(energy_list)))
-dimensions      =       [0.5,0.5,0];                        file_tosave.write('Dimensions:\t{} (cm)\n'.format(dimensions)) #We are considering 2.5 (m) length 
+dimensions      =       [50,50,50];                        file_tosave.write('Dimensions:\t{} (cm)\n'.format(dimensions)) #We are considering 2.5 (m) length 
 masses          =       [0.511, 105.66, 139.57, 493.7, 938.27];    file_tosave.write('Masses:\t\t{} (MeV)\n'.format(masses))  #(MeV/c2)  [muon, pi, k, proton]
 Pressure        =       0.001;                                 file_tosave.write('Pressure:\t{} (bar)\n'.format(Pressure))#bar
 sampling_size   =       0.75;                                file_tosave.write('Sampling size:\t{} (cm)\n\n'.format(sampling_size)) #cm (2 mm) ; #4 mm in PEP-4
@@ -121,15 +121,15 @@ for i in range(n_particles):
     #Iteration over each track
     for track in tracks_list:
         track.fill()                                                           #Maybe this is taking too much time (?)
-        x_position, _ = np.split(track.electron_positions, 2, axis = 1)        #Getting the x_position (along the track) 
+        x_position = track.electron_positions[:,0]        #Getting the x_position (along the track) 
         track_length = track.track_length
         n_electrons = track.n_electrons
-        i = sampling_size
+        j = sampling_size
         electrons_per_sample = []                                      #Initializing the list for every track!!
-        while i <= track_length: #This could be done with Pandas??
-            n_electrons_sample = len(x_position[(x_position > i) & (x_position < (i + sampling_size))])
+        while j <= track_length: #This could be done with Pandas??
+            n_electrons_sample = len(x_position[(x_position > j) & (x_position < (j + sampling_size))])
             electrons_per_sample.append(n_electrons_sample)
-            i = i + sampling_size
+            j = j + sampling_size
         
         electrons_per_sample = np.array(electrons_per_sample)
         

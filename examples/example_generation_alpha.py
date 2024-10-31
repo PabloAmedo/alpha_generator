@@ -1,68 +1,70 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Sep 12 11:16:45 2023
+Created on Tue Sep 10 13:44:51 2024
 
-@author: Pablo
+@author: diego
 """
+
 import os
 os.chdir('../')
 
+from PIL import Image
 from Alpha_track_simulator import*
-import sys
-import time
+from optical_gain import*
 
-sys.path.append('/..')
+os.chdir('alpha_generator/auxiliar_scripts/')
 
-st = time.time()
-# This is an example of how to generate alpha tracks using this generator
+from optical_gain_tools import *
+from general_tools import * 
+
 print('Running...')
-# Create an argon object from the gas class
-argon = Gas(gas = 'ArCF4')
 
-# Create a source and a list to store the tracks
+#INPUTS =======================================================================
 
-source = Source(radius = 0.35, red_fact = 100) #Radius in cm
+n_tracks = 1
+red = 1
+rebin = 12
+gain = 50
 
-track_list = []
+diff = 0.24
+ath_angle = 220 * deg_to_rad
+phi_angle = -45 * deg_to_rad
+bins = [int(2688 / rebin),int(2196 / rebin)]                                   #Change to binning --> this is the size for a 12x12 reb
+pixel_size = (4.5e-4 * rebin * 19.57)                                          #real size * rebinning * magnification 
 
-# Set some parameters for the alpha track production
-n_tracks = 1 ; ath_angle = 0
+x_range = [-(pixel_size * bins[0])/2, (pixel_size * bins[0])/2]
+y_range = [-(pixel_size * bins[1])/2, (pixel_size * bins[1])/2]
 
-exposition_time = n_tracks / source.rate #In seconds
+opt_params = LoadOpticalParams(rebin)
+#GENERATION ===================================================================
 
-# Generate the alpha tracks using the Bragg profile
-source.produce_alpha(n = n_tracks, store = track_list, ath_in = None, ionization_profile = "Bragg")
+source=Source(radius = 0.35, red_fact = red, rate = 1750)
+track_list=[]
 
+exposition_time = n_tracks / (source.rate)
+source.produce_alpha(n = n_tracks, store = track_list, ionization_profile = "Bragg")
 
-#Create a difussion handler and change the diffusion of the tracks (sigma in cm)
-diff_handler = Diffusion_handler(sigma_PSF = 0)
-# Update the diffusion for each track
-diff_handler.diffuse(track_list, 180)
+diff_handler=Diffusion_handler(sigma_diff = diff, sigma_PSF = 0)
+diff_handler.diffuse(track_list)
 
-# Generate the electrons alongside the tracks. This will generate the original positions of
-# the electrons and the diffused positions as well
 for i in track_list: i.fill(diff = True)
 
-
-#Create a noise object with a given dark noise
-noise = Noise(50)
+noise = Noise(110)
 
 #Plot the tracks
-image2d = Image_2D(track_list = track_list, hist_args = {"bins":100})
-# #Plot the tracks
+image2d = Image_2D(track_list = track_list, hist_args = {"bins": bins, "range":[x_range, y_range]}, 
+                   QE = float(opt_params['qeff']), GE = float(opt_params['geomeff']), Tp = float(opt_params['T']), 
+                   gain = gain)
 image2d.track_plot()
 image2d.plot_hist(noise_object = noise, exposition_time = exposition_time)
-image2d.plot_x()
+image2d.plot_x(variable_cut = 'x', min_var = -0.648, max_var = 0.378)
 
-end = time.time()
-
-print('Elapsed time:\t', end - st)
-
-
-
-
-
-
+IMAGENtiff = noise.add_noise(exposition_time, image2d.Hist2D)
+#PLOTS ========================================================================
+plt.figure()
+plt.title('Optical Gain = {}'.format(gain))
+img = plt.imshow(IMAGENtiff, cmap = 'gray', vmax = np.max(IMAGENtiff) * 1.1)
+plt.colorbar(img)
 
 
 

@@ -158,7 +158,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
         self.P = pressure                                                      #bar
         
         
-    def produce_muon(self, n, store, position_in = None, phi_in = None, ath_in = None, line = False, 
+    def produce_muon(self, n, store, position_in = None, z_in = None, phi_in = None, ath_in = None, line = False, 
                      e_cut = 10000, n_cl_cm_in = None, length = None):
         
         """
@@ -183,21 +183,29 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
         for i in range(n):
             if position_in:
                 self.x0, self.y0, self.z0 = position_in
+            elif z_in:
+                self.x0 = 0 #np.random.rand(n) * self.xmax     # IF X0 = 0 THE TRACK 'COMES' FROM THIS SIDE
+                self.y0 = np.random.rand() * self.ymax
+                self.z0 = z_in
             else:
                 #If initial position is not given we generate a random one
                 self.x0 = 0 #np.random.rand(n) * self.xmax     # IF X0 = 0 THE TRACK 'COMES' FROM THIS SIDE
                 self.y0 = np.random.rand() * self.ymax
                 self.z0 = np.random.rand() * self.zmax
-            
+                
             #Get/generate angles
             self.phi = phi_in if phi_in != None else np.random.rand() * np.random.choice((-1, 1)) * np.pi / 2 
             self.ath = ath_in if ath_in != None else np.random.rand() *  np.pi
             
-         
+            if line:
+                self.phi = 0
+                self.ath = np.pi/2
+            
             phi_min = np.arctan((self.ymax - self.y0 ) / self.xmax)
             ath_min = np.arctan(self.xmax / (self.zmax - self.z0 ))
             ath_max = np.arctan(self.z0 / self.xmax) + np.pi / 2
     
+            
             #Computing final positions
             if length:
                 xout = self.x0 + length * np.cos(self.phi) * np.sin(self.ath)
@@ -219,8 +227,8 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
         
             ####################### CLUSTER + ELECTRONS #######################
             #Getting the number of clusters for the given energy and particle (self.mass)
-            n_cl_cm = self.P * dNdx(self.energy, self.mass, pure_argon = False) #if n_cl_cm_in == None else self.P * n_cl_cm_in #from HEED simulations
-            n_cl_avg = np.random.poisson(lam = tr_len * n_cl_cm)
+            dNdx = self.P * Get_dNdx(self.energy, self.mass, pure_argon = False)
+            n_cl_avg = np.random.poisson(lam = tr_len * dNdx)
             
             #FIXME: I HAVE TO CLEAN THIS A BIT (remove the useless ones)
             #CLUSTER DISTRIBUTOIN FOR DIFFERENT GASES --- Maybe this could be done from a dict???? - fixme
@@ -289,8 +297,8 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
 
                 
             elif self.gas == 'PEP4':#from HEED (01mm to remove the XR propagation)
-                n_cl_cm = 0.9844562192883783 * self.P * dNdx(self.energy, self.mass)
-                n_cl_avg = np.random.poisson(lam = tr_len * n_cl_cm)
+                dNdx = 0.9844562192883783 * self.P * Get_dNdx(self.energy, self.mass)
+                n_cl_avg = np.random.poisson(lam = tr_len * dNdx)
                 
                 data_PEP4 = np.loadtxt('data/clusters_distributions/ArCH4-80-20-10bar_0.1x0.1x0.1mmCell_2.5GeVmuons_normalized.txt' , skiprows = 1)
                 n_el, P_el, _ = np.split(data_PEP4, 3, axis = 1)
@@ -304,8 +312,8 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                                           p = probs_final / probs_final.sum())
                 
             elif self.gas == 'nano-N2':
-                #n_cl_cm = 2 #DELETE
-                #n_cl_avg = np.random.poisson(lam = tr_len * n_cl_cm)
+                #dNdx = 2 #DELETE
+                #n_cl_avg = np.random.poisson(lam = tr_len * dNdx)
                 data_nanoN2 = np.loadtxt('nanodosimetry/cluster_size/nitrogen-10bar_0.1x0.1x0.1mmCell_2.5GeVmuons_normalized.txt')
                 n_el, P_el, _ = np.split(data_nanoN2, 3, axis = 1)
                 P_el = P_el.flatten() / 100 ; n_el = n_el.flatten()
@@ -319,7 +327,7 @@ class muon_generator:#FIXME: change name to cp_generator -- charged particle
                 
             elif self.gas == 'nano-C3H8':
                 
-                n_cl_avg = np.random.poisson(lam = tr_len[i] * n_cl_cm * 2.65)
+                n_cl_avg = np.random.poisson(lam = tr_len[i] * dNdx * 2.65)
                 data_nanoC3H8 = np.loadtxt('nanodosimetry/cluster_size/propane-10bar_0.1x0.1x0.1mmCell_2.5GeVmuons_normalized.txt')
                 n_el, P_el, _ = np.split(data_nanoC3H8, 3, axis = 1)
                 P_el = P_el.flatten() / 100 ; n_el = n_el.flatten()
@@ -415,10 +423,10 @@ class muon_tracks(muon_generator):
         self.electron_positions=np.zeros([int(sum(ne)), 3]) # coordenadas [x,y] para los 50 electrones
         #Storage of electrons (z,y) positions after diffusion
         self.electron_positions_diff=np.zeros([int(sum(ne)), 3])
-        
+        self.n_clusers = len(cl_y_tr)
         #Assign positions to e in cluster 
         aux_electrons_total = 0
-        for i in range(len(cl_y_tr)):#FIXME
+        for i in range(self.n_clusers):#FIXME
             for j in range(int(self.n_e_cl[i])):
                 #Change the positions
                 self.electron_positions[aux_electrons_total, 0] = cl_x_tr[i]
@@ -456,7 +464,7 @@ class muon_tracks(muon_generator):
             index=0;other_index=1
             
         #Iterate over the electrons
-        for j in range(int(self.n_electrons)):
+        for j in range(self.n_clusers):
             #Check if they are whitin our current 
             if min_var<self.electron_positions_diff[j,index]<=max_var:
                 array_to_store.append(self.electron_positions_diff[j,other_index])
@@ -721,7 +729,7 @@ class Image_2D():
         
         This object will be exported and loaded by our analysis framework"""
         
-    def __init__(self,track_list, hist_args = {"bins":100}, QE = 1, GE = 1, Tp = 1, gain = 1, ph_poiss = False, pixel_size = 0.2):
+    def __init__(self,track_list, hist_args = {"bins":100}, QE = 1, GE = 1, Tp = 1, gain = 1, ph_poiss = False):
         
         #List of tracks
         self.track_list = track_list
@@ -746,26 +754,6 @@ class Image_2D():
         self.GE = GE
         self.Tp = Tp
         self.gain = gain    
-        """
-        #hist_args['bins'] are the TOTAL number of pixels per axis for the entire detector.
-        #We have to select the number of pixels involved in the tracking for smaller tracks.
-        tlen_x = []
-        tlen_y = []
-        for track in track_list:
-            tlen_x.append(track.x)
-            tlen_y.append(abs(track.y - track.y0))
-        
-        track_length_x = max(tlen_x)
-        track_length_y = max(tlen_y) if max(tlen_y) != 0.0 else 1.4
-        binsx = int(track_length_x / pixel_size)
-        binsy = int(track_length_y / pixel_size)
-        
-        hist_args['bins'] = (abs(int(binsx)), abs(int(binsy)))
-        #Get the 2d hist for all the electrons and the edges from the list of tracks.
-        #Extra arguments can be passed to the 2D numpy histogram function
-        self.Hist2D_e,self.x_edges,self.y_edges=np.histogram2d(x = self.x_pos, y = self.y_pos, bins = (abs(int(binsx)), abs(int(binsy))))
-        #Since numpy inverts the (y,x) histogram, invert it again
-        self.Hist2D_e=self.Hist2D_e.T"""
         
         #Get the 2d hist for all the electrons and the edges from the list of tracks.
         #Extra arguments can be passed to the 2D numpy histogram function
