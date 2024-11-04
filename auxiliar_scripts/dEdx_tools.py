@@ -34,6 +34,8 @@ def load_cd(path):
         
     return np.array(pm_S), np.array(dNdx_S)
 
+
+
 def Get_dNdx(Energy, mass,  Wi = 26.4, Pressure = 10, path = 'alpha_generator/data/cluster_densities/', gas = 'ArCF4', particle = 'muon', pure_argon = False):
     """
     Get the number of ionization clusters per unit length (cl/cm) for given:
@@ -70,18 +72,21 @@ def Get_dNdx(Energy, mass,  Wi = 26.4, Pressure = 10, path = 'alpha_generator/da
     
     #P/m calculation
     pm = Momentum(Energy, mass) / mass
+    print('pm:\t',pm)
     
     if pm <= 1:
+        #print('quad')
         extrapolator = interp1d(pm_p, dNdx_p, kind = 'quadratic', fill_value = 'extrapolate')  
         dNdx_extrapolated = extrapolator(pm)
         if pure_argon:
             dNdx_extrapolated = dNdx_extrapolated / 1.0561177042126448             #scale factor from Ar/CF4 (99/1) to Pure Ar
     else:
+        #print('linear')
         data_interpolator = interp1d(pm_mu, dNdx_mu, kind = 'linear', fill_value = 'extrapolate') #slinear
         dNdx_extrapolated = data_interpolator(pm)
         if pure_argon:
             dNdx_extrapolated = dNdx_extrapolated / 1.0561177042126448             #scale factor from Ar/CF4 (99/1) to Pure Ar
-
+    #print('dN:\t',dNdx_extrapolated / Pressure)
     return dNdx_extrapolated / Pressure
 
 """
