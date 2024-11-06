@@ -72,7 +72,7 @@ def Get_dNdx(Energy, mass,  Wi = 26.4, Pressure = 10, path = 'alpha_generator/da
     
     #P/m calculation
     pm = Momentum(Energy, mass) / mass
-    print('pm:\t',pm)
+    #print('pm:\t',pm)
     
     if pm <= 1:
         #print('quad')

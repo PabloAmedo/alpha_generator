@@ -586,7 +586,7 @@ class Gas:
     """This is the gass class. It includes information about the W, drift velocity, etc"""
     
     def __init__(self,gas = 'ArCF4_99-1', vz = None, Dt = None, Dl = None,
-                 Wi = 25.7,density=1.662e-3, A = 40, Z = 18, I = 188e-6,
+                 Wi = 26.7,density=1.662e-3, A = 40, Z = 18, I = 188e-6,
                  L_drift = 14.2, Pressure = 1):
         
         self.gas = gas
