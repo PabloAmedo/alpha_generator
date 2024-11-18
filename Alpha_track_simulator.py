@@ -600,7 +600,7 @@ class Gas:
         self.I = I                  #Mev
         
         #Setup info --> change this
-        self.L_drift = L_drift
+        self.L_drift = L_drift #Default set for July24 run @GAT0 settings
         self.Pressure = Pressure
         
         
@@ -694,7 +694,7 @@ class Noise():
         
         #Electronic noise (e) = dark_current (e/s) * exposition_time (s)
         #These units are in electrons
-        electronic_noise = self.dark_current #* exposition_time
+        electronic_noise = self.dark_current * exposition_time
         
         #Create an array of n_bins*n_bins and populate them with random numbers
         #random_gauss=np.random.normal(scale=electronic_noise,size=Hist2d.shape)
@@ -711,9 +711,9 @@ class Noise():
         """This method adds noise to each pixel of a 2D histogram using a gaussian distribution
         for each pixel"""
         
-        random_gauss=np.random.normal(loc=mean,size=Hist2d.shape,scale=sigma)
+        random_gauss=np.random.poisson(mean,size=Hist2d.shape)#,scale=sigma)
         #Ignore the negative ones?
-        random_gauss=abs(random_gauss)
+        #random_gauss[random_gauss < 0] = 0
         
         #Update the 2d histogram with this values and return it
         
