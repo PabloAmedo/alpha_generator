@@ -21,10 +21,10 @@ print('Running...')
 
 #INPUTS =======================================================================
 
-n_tracks = 1
-red = 1
+n_tracks = 100
+red = 100
 rebin = 12
-gain = 50
+gain = 5000
 
 diff = 0.24
 ath_angle = 220 * deg_to_rad
@@ -57,7 +57,7 @@ image2d = Image_2D(track_list = track_list, hist_args = {"bins": bins, "range":[
                    gain = gain)
 image2d.track_plot()
 image2d.plot_hist(noise_object = noise, exposition_time = exposition_time)
-image2d.plot_x(variable_cut = 'x', min_var = -0.648, max_var = 0.378)
+image2d.plot_x(variable_cut = 'x')#, min_var = -0.648, max_var = 0.378)
 
 IMAGENtiff = noise.add_noise(exposition_time, image2d.Hist2D)
 #PLOTS ========================================================================

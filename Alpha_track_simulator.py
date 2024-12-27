@@ -48,19 +48,20 @@ class Source:
     
     """This is the source class. It includes all the relevant information about the source"""
     
-    def __init__(self, rate = 500, energy = 5.5, radius = 0.35, M = 933, range_alpha = 4.8, We = 25.7e-6, red_fact = 1):
+    def __init__(self, rate = 500, energy = 5.5, radius = 0.35, M = 933, range_alpha = 4.8, We = 25.7e-6, P = 1, red_fact = 1):
         
-        self.rate=rate #In Hz
+        self.rate = rate #In Hz
         
-        self.energy=5.5 #In Mv
+        self.energy = 5.5 #In Mv
         
         self.radius=radius # In cm
         
-        self.range_alpha=range_alpha
+        self.P = P
+        self.range_alpha = range_alpha / self.P
         
-        self.M=M
-        self.z=2
-        self.n_e=int(energy/We)                                  #Add We at some point
+        self.M = M
+        self.z = 2
+        self.n_e = int(energy/We)                                  #Add We at some point
         self.red_fact = red_fact
     
     def produce_alpha(self, n, store,ionization_profile, phi_in=None, ath_in=None, theta=None): 
@@ -76,7 +77,7 @@ class Source:
         """        
         n_electrons = int(214007/self.red_fact)
         if ionization_profile=='Bragg':
-            self.x,self.Sp,self.acum=bragg_peak(self.energy,self.range_alpha)
+            self.x, self.Sp,self.acum=bragg_peak(self.energy,self.range_alpha)
         else:
             self.x=None
             self.Sp=None
@@ -485,7 +486,7 @@ class Alphas_tracks(Source):
                                   #son vectores x y Sp, necesarios para los randoms
         
         #This is the range of the alpha. Get it from NIST
-        self.range_max = range_alpha #In cm
+        self.range_max = range_alpha / self.P #In cm
         
         #Athimutal angle. This reduces our effective alpha range by the projection
         self.ath = ath
@@ -865,7 +866,7 @@ class Image_2D():
         
         return fig
     
-    def plot_x(self, variable_cut = 'x', min_var = -0.5, max_var = 0.5):
+    def plot_x(self, variable_cut = 'x', min_var = -1.5, max_var = 1.5):
         electron_cut = []
         
         if variable_cut == 'x':

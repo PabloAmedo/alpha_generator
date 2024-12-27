@@ -22,11 +22,11 @@ plt.close('all')
 
 save = 0
 
-n_tracks = 1
+n_tracks = 100
 electrons = int(5.5e6 / 25.7) #214007
 ph_target = 2002
 
-red = 1#electrons / ph_target
+red = 100#electrons / ph_target
 
 conf = '{}t_1e{}e'.format(n_tracks, red)
 diff = 0.25 

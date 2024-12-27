@@ -22,7 +22,7 @@ def Momentum(energy, mass):
     return np.array(p_list)
 
 #INPUTS========================================================================
-n_tracks    =   1
+n_tracks    =   3
 P           =   1.5                                                            #bar
 #y0          =   10
 #ath0        =   50 * ( np.pi / 180)
@@ -88,7 +88,7 @@ hist[hist == 0] = 'NaN'
 plt.figure()
 plt.imshow(img_fromCamera, cmap = 'gray')
 plt.colorbar()
-
+"""
 plt.figure()
 plt.pcolormesh(hist_x, hist_y, hist, cmap = 'gray')
 plt.colorbar()
@@ -96,7 +96,7 @@ plt.xlim([0, dimensions[0]])
 plt.ylim([0, dimensions[1]])
 plt.xlabel('X (cm)', fontsize = 15)
 plt.ylabel('Y (cm)', fontsize = 15)
-
+"""
 print('px size:\t({:.3f} x {:.3f}) (cm x cm)'.format(np.mean(np.diff(hist_x)), np.mean(np.diff(hist_y))))
 
 #PLOT =========================================================================
