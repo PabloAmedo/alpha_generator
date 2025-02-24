@@ -14,7 +14,9 @@ from scipy.optimize import curve_fit
 import matplotlib.patches as patches
 import matplotlib.colors as mcolors
 
-
+#NOT IN USE ===================================================================
+#==============================================================================
+#==============================================================================
 def BaselineSubstraction(image, baseline = 100):                               
     image = np.array(image, dtype = float)
     """
@@ -132,6 +134,9 @@ def ImageCut(geometry, image, vpix, hpix = 0, axis_cut = 'x', offcenter = None, 
             fig.savefig('../tiffs/July24/new set data/highgain-2structures/12x12/100ms/cmap2/ss_single_' + str(i) + '.tif')
     return imageArray, array_aux
 
+#==============================================================================
+#==============================================================================
+#==============================================================================
 
 def LoadOpticalParams(binning, conf = '_test' ,spath = '../setup_params/datos'):
     path = spath + str(binning) + 'x' + str(binning) + conf + '.csv'
@@ -144,6 +149,8 @@ def HotPixel12x12(data_image):
     """
     Hot pixel substraction for a 12x12 rebinning.
     Only the image input is needed.
+    
+    RETIGA R6 CCD CAMERA
     """
     #FIXME -> create a txt with the pixels positions for each rebinning
     hotpix12x12 = ([9,22], [3,71], [34,2], [23,185], [71,38], [23,185],

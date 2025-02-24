@@ -1,8 +1,0 @@
-INPUTS
-Exposure time:		100
-Thinning factor:	10
-
-ss_single_1.tiff	402.49704185048404
-ss_single_2.tiff	176.87776734950768
-
-Average gain:		289.68740459999583

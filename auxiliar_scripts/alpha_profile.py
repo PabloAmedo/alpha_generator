@@ -28,7 +28,7 @@ red = 10
 px_to_cm = 9.467
 
 #DATA
-folder = '../../Gain anlysis/Data/20240719/acryliconly/c-1136_r-128_acground_aa1910_fc2210_fa2210/100ms/'#+ str(int(ms/3)) + 'ms/'
+folder = '../../Gain analysis/Data/20240726/c-5254_r-2698_ac-2410_aa-300_fcground_fa1190/12x12/100ms/'#+ str(int(ms/3)) + 'ms/'
 #folder = '../tiffs/test/bin 12x12 100ms/'
 path = folder + 'ss_single_'
 ext = '.tiff'
@@ -39,7 +39,7 @@ save.write('INPUTS\n')
 save.write('Exposure time:\t\t{}\n'.format(str(int(ms/3.5))))
 save.write('Thinning factor:\t{}\n\n'.format(red))
 
-base = 414  #camera offset --> the number comes from previous analyses (see noise measurements)
+base = 211  #camera offset --> the number comes from previous analyses (see noise measurements)
 
 #SIM
 h2 = np.loadtxt('../data_debug/diff_fixed_2-5mm/sim' + str(int(ms/(2))) + 't_1e{}e.txt'.format(red))
@@ -60,7 +60,7 @@ hpix = 55    #remove this num of pxs horizontally at each side --> useful to min
 vpix = 40    #25 #height of the cut in pxs
 
 #Display settings
-show = True
+show = False
 #save = False
 cmap = 'RdBu'
 
@@ -100,7 +100,7 @@ h2phe = np.random.poisson(h2ef)
 
 #ITERATION ====================================================================
 
-nfiles = 2
+nfiles = 20
 #Uncomment in the case we want to run it for diff
 for i in range(1, nfiles+1):
    data_path = path + str(i) + ext

@@ -14,7 +14,7 @@ rho_Ar = 1.784             #g/cm3
 def bragg_peak(E,alpha_range):
   
     me=0.511                           #MeV/c**2
-    M=931.5*4                          #MeV/c**2
+    M=931.5 * 4                          #MeV/c**2
     re=2.8179402894e-13                #cm
     NA=6.022e23                        #1/mol
     Co = 4*np.pi*NA*re**2*me           #MeV*cm2/mol (??)
@@ -33,6 +33,7 @@ def bragg_peak(E,alpha_range):
          
     for i in range(len(r)-1):
         gamma=E/M+1
+        #print(gamma)
         beta=(1-1/(gamma**2))**0.5
         dE_dx=rho*Co*Z/A*z**2/beta**2*(np.log(2*me/I)+np.log(beta**2/(1-beta**2))-beta**2)
         
@@ -67,9 +68,9 @@ def bragg_peak(E,alpha_range):
     acum=np.cumsum(Sp)/np.sum(Sp)
     acum=np.array(acum)    # Integral // valor max=1
     
-    return (x,Sp,acum)
+    return (x, Sp, acum)
 
-def random_bragg(x,acum):
+def random_bragg(x, acum):
     '''
     It gives a random number following a given distribution
     '''
@@ -130,4 +131,55 @@ plt.xlabel('length [cm]')
 plt.ylabel('stopping power [MeV $cm^{-1}$]')
 plt.grid()
 plt.legend()
+"""
+
+"""
+rho_Ar = 1.784             #g/cm3
+def bragg_peak(E, alpha_range, I = 210, A = 40, Z = 18, z = 2, rho = 1.66201e-3):
+  
+    me = 0.511                           #MeV/c2
+    M = 931.5 * 4                        #MeV/c2
+    re = 2.8179402894e-13                #cm
+    NA = 6.022e23                        #1/mol
+    Co = 4 * np.pi * NA * re**2 * me     #MeV/c2*cm/mol
+    
+    #-------Ar------
+    I = I * 1e-6                         #MeV  #xq 210?? segun NIST 188
+    A = A
+    Z = Z
+    z = z
+    rho = rho                            #1.748*1000/(100**3)                  #NIST rho=1.66201e-3 #g/cm3
+    #---------------
+    
+    Sp = []                              #Stopping Power                          
+    x = []                               #?
+    r = np.linspace(alpha_range / 1000, alpha_range * 10, int(1e5/2.5))
+         
+    for i in range(len(r)-1):
+        gamma = E / M + 1
+        print(gamma)
+        beta = (1 - 1 / (gamma**2))**0.5
+        dE_dx = rho * Co * Z / A * z**2 / beta**2 * (np.log(2 * me / I) + np.log(beta**2 / (1 - beta**2)) - beta**2)
+        
+        Sp.append(dE_dx)
+        x.append((r[i + 1] + r[i]) / 2)
+        
+        E = E - dE_dx * (r[i + 1] - r[i])
+        if x[i] > alpha_range and x[i] < alpha_range * 1.1:
+            break
+    
+    Sp = np.array(Sp)
+    x = np.array(x)
+    
+    #Debemos cortar la distribución cuando baje a prácticamente cero
+    #ya que hacemos random*Rcsda 
+    
+    x = x / x[-1]
+    # y=Sp/np.sum(Sp)
+    
+    acum = []
+    acum = np.cumsum(Sp) / np.sum(Sp)
+    acum = np.array(acum)    # Integral // valor max=1
+    
+    return (x, Sp, acum)
 """

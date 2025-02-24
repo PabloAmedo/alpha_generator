@@ -13,11 +13,11 @@ from general_tools import *
 
 plt.close('all')
 
-path = '../../Gain analysis/Data/selected tracks/two tracks/ss_single_4.tiff'
+path = '../../Gain analysis/selected tracks/two tracks/ss_single_4.tiff'
 pct = 1.1
-img_ = Image.open(path)
+img = Image.open(path)
 
-img = BaselineSubstraction(img_, baseline = 111)
+#img = BaselineSubstraction(img_, baseline = 111)
 img_array = np.array(img)
 row, col = np.unravel_index(np.argmax(img_array), img_array.shape)
 

@@ -10,6 +10,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
+import PIL
 
 
 #DEFINING SOME CONVERSION CONSTANTS
@@ -56,15 +57,14 @@ def generate_gif(folder, time_step = 0.25, path = None, ext = '.tiff', nametosav
     return images
 
 def cmap_change(image, cmap, pct_max = 1, title = None):
-    
     img_array = np.array(image)
     
     fig = plt.figure()
     if title != None:
-        plt.title('{}'.format(title), fontsize = 25)
+        plt.title('{}'.format(title), fontsize = 18)
     img = plt.imshow(image, cmap = cmap, vmax = np.max(img_array) * pct_max)
     plt.colorbar(img)
-    plt.tick_params(axis='both', which='major', labelsize = 18)
-    plt.xlabel('X (px)', fontsize = 20)
-    plt.ylabel('Y (px)', fontsize = 20)
+    plt.tick_params(axis='both', which='major', labelsize = 13)
+    plt.xlabel('X (px)', fontsize = 15)
+    plt.ylabel('Y (px)', fontsize = 15)
     fig.tight_layout()

@@ -27,7 +27,7 @@ P           =   1.5                                                            #
 #y0          =   10
 #ath0        =   50 * ( np.pi / 180)
 E           =   3500                                                           #E = 4000 [MeV] (CR)
-dimensions  =   [16,16,19]
+dimensions  =   [50,50,50]
 mass        =   105.66
 gas         =   'ArCF4_99-1'
 e_cut       =   10000

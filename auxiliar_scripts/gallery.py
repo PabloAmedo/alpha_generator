@@ -10,18 +10,26 @@ import matplotlib.pyplot as plt
 from general_tools import *
 import os
 from PIL import Image
+os.chdir('../../SingleTrackAnalysis-Liv23/rebin')
+from rebinning_tools import *
+print(os.getcwd())
+os.chdir('../../alpha_generator/auxiliar_scripts')
 
 print('Running...')
-#print(os.getcwd())     # --> auxiliar_scritps
-
-path = '../../Gain anlysis/Data/20240719/fr4_acryliclowestpossible/c-3064_r-1928_ac-1800_aa-300_fcground_fa1160/2ms/'
+print(os.getcwd())
+path = '../../../../NOV24 - EXPERIMENTAL CAMPAIGN/Camera/20122024/Both/10ms/'
 extension = '.tiff'
 cmap = 'RdBu'
 
-tiff_files = [f for f in os.listdir(path) if f.endswith('.tiff')]    
+
+tiff_files = [f for f in os.listdir(path) if f.endswith('.tif')]    
 
 for file in tiff_files:
-    img = Image.open(path + file)
+    img_ = Image.open(path + file)
     
-    cmap_change(img, cmap = cmap, title = file)
-    #plt.savefig(path + 'cmaps/' + cmap + '/' + file)
+    imgar = np.array(img_, dtype = np.uint8)
+    imgreb = rebin(imgar[:,:-1], 3)
+    
+    
+    cmap_change(imgreb, cmap = cmap, title = file, pct_max = 1)
+    plt.savefig(path + 'cmaps/' + cmap + file)
